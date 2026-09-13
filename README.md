@@ -12,3 +12,5 @@ py-normal90.py = The version that has nothing I consider to be abuse, but has 1 
 py-abuse50.py = The version that has some abuse, mostly same as previous and semicolons for putting code inside previous lines  
 py-abuse75.py = The version that has 2nd most abuse, everything found in previous versions and return value abuse of statements such as teleport, which allows for compound statements to be added in a semicolon line.  
 py-warcrimes.py = Abuses so much that all previous transgressions and now also exec is put in a single file, which is a single line long.  
+  
+For py-normal90-stars-rls.py and py-normal100-stars-rls.py, these 2 are the only files containing night sky and stars.  
