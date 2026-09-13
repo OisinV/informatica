@@ -38,10 +38,12 @@ for i in range(2):
     dot(20, colour[i+4])
 
 teleport(-80, -60)
-for i in range(8): cube(20, (i % 2))
+for i in range(8):
+    cube(20, (i % 2))
 
 teleport(-240, -150)
-for i in range(24): cube(20, 0)
+for i in range(24):
+    cube(20, 0)
 
 color('white')
 for i in range(6):

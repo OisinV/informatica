@@ -1,10 +1,9 @@
 from turtle import * # type: ignore
+hideturtle()
+speed(0)
 
 # pylance bs:
 # pyright: reportUndefinedVariable=false
-
-hideturtle()
-speed(0)
 
 bgcolor('deepskyblue')
 
