@@ -1,13 +1,15 @@
-def cube(size, colouring):
+# pylance bs:
+# pyright: reportUndefinedVariable=false
+def cube(size: int, colouring: int):
     fillcolor(colour[colouring]); begin_fill()
-    for side in range(4): forward(size); left(90)
+    for _ in range(4): forward(size); left(90)
     end_fill(); forward(size)
 
-def cloud(colouring):
+def cloud(colouring: int):
     xstart, ystart = xcor(), ycor()
     for x, y in [(0, 0), (27, 0), (14, 6)]: teleport((xstart+x), (ystart+y)); dot(20, colour[colouring])
 
-from turtle import *; hideturtle(); speed(0); bgcolor('deepskyblue'); colour = ['orange', 'yellow', 'white', 'green', 'red', 'brown']; teleports = [[-235, -235, -45, -45, 140, 140, -195, 140, 75, 90, -199, 181, 116, -110, 20], [125, 105, 125, 105, 125, 105, 55, 35, 100, 100, -130, -130, -130, -120, -120]]; text = ['MARIO', '0000100', 'WORLD', '1-1T', 'TIME', '390']; cube(20, 1); teleport(-80, -60)
+from turtle import *; hideturtle(); speed(0); bgcolor('deepskyblue'); colour = ['orange', 'yellow', 'white', 'green', 'red', 'brown']; teleports = [[-235, -235, -45, -45, 140, 140, -195, 140, 75, 90, -199, 181, 116, -110, 20], [125, 105, 125, 105, 125, 105, 55, 35, 100, 100, -130, -130, -130, -120, -120]]; text = ['MARIO', '0000100', 'WORLD', '1-1T', 'TIME', '390']; cube(20, 1); teleport(-80, -60) # type: ignore
 
 for i in range(7): teleport(teleports[0][i+6], teleports[1][i+6]); cloud(2 if i < 4 else 3)
 
