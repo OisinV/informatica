@@ -31,11 +31,8 @@ teleport(-80, -60)
 
 for i in range(7):
     teleport(teleports[0][i+6], teleports[1][i+6])
-    cloud(2 if i < 4 else 3)
-
-for i in range(2):
-    teleport(teleports[0][i+13], teleports[1][i+13])
-    dot(20, colour[i+4])
+    if (i < 8): cloud(2 if i < 4 else 3)
+    else: dot(20, colour[i+4])
 
 teleport(-80, -60)
 for i in range(8): cube(20, (i % 2))
@@ -47,5 +44,3 @@ color('white')
 for i in range(6):
     teleport(teleports[0][i], teleports[1][i])
     write(text[i], font=('Courier', 11, 'bold'))
-
-exitonclick()
