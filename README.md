@@ -1,3 +1,4 @@
-# prj-py-informatica  
-
-branch "prac0" = "Practicum Grondwerk" all things relating to said practicus (pratical) are stored inside said branch.  
+tumblehouse.py makes an image of a house tumbling, *efficiently*.  
+  
+command:  
+    py tumblehouse.py  
