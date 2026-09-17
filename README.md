@@ -14,3 +14,7 @@ py-abuse75.py = The version that has 2nd most abuse, everything found in previou
 py-warcrimes.py = Abuses so much that all previous transgressions and now also exec is put in a single file, which is a single line long.  
   
 For py-normal90-stars-rls.py and py-normal100-stars-rls.py, these 2 are the only files containing night sky and stars.  
+  
+Full test command (inside dir "py-prac0"):  
+  
+    py py-abuse50-rls.py && py py-abuse75-rls.py && py py-normal100-rls.py && py py-normal100-stars-rls.py && py py-normal90-rls.py && py py-normal90-stars-rls.py && py py-warcrimes-rls.py && py py-test.py  
