@@ -12,4 +12,4 @@ for x, y in [(-100, 0), (35, -35), (150, -50)]:
     left(90)
 
 # - Nulla"O"
-# "NEEEEEERD" - Nulla"M"
+# "NEEEEEERD" - Nulla"M"(non contributor)
