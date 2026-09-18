@@ -4,5 +4,5 @@ tumblehouse.py makes an image of a house tumbling, *efficiently*.
   
 command:  
 ```bash  
-py tumblehouse-mr.py && py tumblehouse-pr.py && tumblehouse-test.py  
+py tumblehouse-mr.py && py tumblehouse-pr.py && py tumblehouse-test.py  && py tumblehouse-bs.py && py cubecircle-rls.py  
 ```  
