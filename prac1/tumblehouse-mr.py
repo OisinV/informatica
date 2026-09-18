@@ -8,7 +8,7 @@ def house():
             left(45 if i == 5 else 90)
         forward(50 if i<5 else 35)
 
-for x in [-150, 0, 150]:
-    teleport(x, 0)
+for x, y in [(-100, 0), (35, -35), (150, -50)]:
+    teleport(x, y)
     house()
     left(90)
