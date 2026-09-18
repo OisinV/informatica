@@ -10,3 +10,6 @@ for x, y in [(-100, 0), (35, -35), (150, -50)]:
     teleport(x, y)
     house()
     left(90)
+
+# - Nulla"O"
+# "NEEEEEERD" - Nulla"M"
