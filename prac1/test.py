@@ -1,5 +1,4 @@
 import turtle
-import math
 
 turtle.speed(0)
 
@@ -12,7 +11,9 @@ def triangle():
 
 triangle()
 turtle.left(30)
-turtle.teleport(turtle.xcor() + (size + size/10) * math.cos(math.radians(turtle.heading())), turtle.ycor() + (size + size/10) * math.sin(math.radians(turtle.heading())))
+turtle.penup()
+turtle.forward(size + size/10)
+turtle.pendown()
 turtle.left(150)
 triangle()
 
