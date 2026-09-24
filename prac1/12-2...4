@@ -1,0 +1,22 @@
+from turtle import *
+bgcolor('deepskyblue')
+penup()
+speed(0)
+
+stapels = [2, 3, 1, 0, 1, 4, 5, 2]
+
+x = -100
+for munten in stapels:
+    for i in range(munten):
+        goto(x, i * 20)
+        dot(18, 'darkgoldenrod')
+        dot(12, 'gold')
+    x = x + 30
+
+mt = 0
+
+teleport(-110, 170)
+write('MUNTEN ' + str(sum(stapels)), font=('Courier', 10, 'bold'))
+if (0 in stapels): mt += 1
+teleport(-110, 145)
+write('LEEG ' + str(mt), font=('Courier', 10, 'bold'))
