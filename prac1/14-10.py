@@ -1,6 +1,6 @@
 from turtle import *
 
-#speed(0)
+speed(0)
 
 def balk(breedte):
     fillcolor('teal')
@@ -16,7 +16,7 @@ rij = '#'
 maat = 243
 y = 120
 
-for ronde in range(2):
+for ronde in range(5):
     print(rij)
     x = -121
     for teken in rij:
@@ -24,6 +24,7 @@ for ronde in range(2):
             teleport(x, y)
             balk(maat)
         x = x + maat
+    rij = rij.replace('.', '...')
     rij = rij.replace('#', '#.#')
     maat = maat / 3
     y = y - 30
