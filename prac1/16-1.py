@@ -8,7 +8,7 @@ r = turtle.Turtle()
 r.speed(0)
 p.speed(0)
 r.penup()
-#r.hideturtle()
+r.hideturtle()
 
 def cube(size, colour):
     r.pendown()
@@ -61,8 +61,8 @@ p.color('gold')
 # Daarna staat de bouwer weer waar hij stond, en kijkt hij dezelfde kant op.
 def build():
     r.setheading(0)
-    r.teleport(xcor()-15, ycor()-15)
-    r.cube(30, 'yellow')
+    r.teleport(r.xcor()-15, r.ycor()-15)
+    cube(30, 'yellow')
     rendererReset()
 
 def forw30():
@@ -113,6 +113,8 @@ def rendererReset():
         r.teleport(p.xcor(), p.ycor())
     while p.heading() != r.heading():
         r.setheading(p.heading())
+
+rendererReset()
 
 onkey(forw30, 'Up')
 onkey(gright, 'Right')
