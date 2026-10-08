@@ -2,9 +2,9 @@ import turtle
 
 bgcolor('black')
 
-coll = [
+coll = [ # pattern: x top left, y top left, x bottom right, y bottom right
     [ # wall sets:
-        [-180, -150, 90, 60]
+        [-200, -200, -200, -200]
     ]
 ]
 
@@ -16,19 +16,21 @@ p.speed(0)
 r.penup()
 r.hideturtle()
 
-def cube(size, colour):
+def cube(size, colour, collisionAdd:bool=False):
     r.pendown()
     r.fillcolor(colour)
     r.begin_fill()
+    if collisionAdd == True:
+            coll[0].append([r.xcor(), r.ycor(), r.xcor()+size, r.ycor()+size])
     for _ in range(4):
         r.forward(size)
         r.left(90)
     r.end_fill()
     r.penup()
 
-def wall(x, y):
+def wall(x:int, y:int, collisionAdd:bool=False):
     r.teleport(x, y)
-    cube(30, 'dimgray')
+    cube(30, 'dimgray', collisionAdd)
 
 def chest(x, y):
     r.teleport(x, y)
@@ -69,6 +71,11 @@ def build():
     r.setheading(0)
     r.teleport(r.xcor()-15, r.ycor()-15)
     cube(30, 'yellow')
+    rendererReset()
+
+def build_wall():
+    r.setheading(0)
+    wall(r.xcor()-15, r.ycor()-15, True)
     rendererReset()
 
 def forw30():
@@ -115,16 +122,13 @@ def collision(hwm:int=30):
     return rt
 
 def andsy():
-    rt = True
+    rt = False
     for i in range(len(coll[0])):
-        if (r.xcor() >= coll[0][0][0] and r.xcor() <= coll[0][0][1]) and (r.ycor() >= coll[0][0][3] and r.ycor() <= coll[0][0][4]):
-            rt = False
-        else:
-            rt = True
-        if rt == False:
+        if (r.xcor() >= coll[0][i][0] and r.xcor() <= coll[0][i][2]) and (r.ycor() >= coll[0][i][1] and r.ycor() <= coll[0][i][3]):
             return True
-        else:
-            return False
+    return False
+
+
 
 def rendererReset():
     while p.xcor() != r.xcor():
@@ -134,6 +138,9 @@ def rendererReset():
     while p.heading() != r.heading():
         r.setheading(p.heading())
 
+#def debug():
+#    print(coll)
+
 rendererReset()
 
 onkey(forw30, 'Up')
@@ -141,4 +148,6 @@ onkey(gright, 'Right')
 onkey(gleft, 'Left')
 onkey(bckw30, 'Down')
 onkey(build, 'z')
+onkey(build_wall, 'm')
+#onkey(debug, 'd')
 listen()
