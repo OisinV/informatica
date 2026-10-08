@@ -1,42 +1,74 @@
 import turtle
+import time
 
-bgcolor('black')
+turtle.bgcolor('black')
 
 coll = [ # pattern: x top left, y top left, x bottom right, y bottom right
     [ # wall sets:
         [-200, -200, -200, -200]
+    ],
+    [ # lava sets:
+        [-200, -200, -200, -200]
     ]
 ]
+c = False
+hp = 100
+stopped = False
 
 p = turtle.Turtle()
 r = turtle.Turtle()
 
 r.speed(0)
-p.speed(1)
+p.speed(0)
 r.penup()
 r.hideturtle()
 
-def cube(size, colour, collisionAdd:bool=False):
+def cube(size:int, colour:str, collisionAdd:int=0):
     r.pendown()
     r.fillcolor(colour)
     r.begin_fill()
-    if collisionAdd == True:
-            coll[0].append([r.xcor(), r.ycor(), r.xcor()+size, r.ycor()+size])
+    match collisionAdd:
+        case 1:
+            coll[0].append([int(r.xcor()), int(r.ycor()), int(r.xcor())+size, int(r.ycor())+size])
+        case 2:
+            coll[1].append([int(r.xcor()), int(r.ycor()), int(r.xcor())+size, int(r.ycor())+size])
+        case 3:
+            for i in range(len(coll)):
+                try:
+                    coll[i].remove([int(r.xcor()), int(r.ycor()), int(r.xcor())+size, int(r.ycor())+size])
+                    break
+                except ValueError:
+                    pass
+        case _:
+            pass
     for _ in range(4):
         r.forward(size)
         r.left(90)
     r.end_fill()
     r.penup()
 
-def wall(x:int, y:int, collisionAdd:bool=False):
+def wall(x:int, y:int, collisionAdd:int=0):
     r.teleport(x, y)
     cube(30, 'dimgray', collisionAdd)
 
-def chest(x, y):
+def chest(x:int, y:int):
     r.teleport(x, y)
     cube(30, 'saddlebrown')
     r.teleport(x + 15, y + 15)
-    dot(8, 'gold')
+    r.dot(8, 'gold')
+
+def isonobject():
+    global hp
+    if c == False:
+        for i in range(1, len(coll)):
+            for j in range(len(coll[i])):
+                if (p.xcor() >= coll[i][j][0] and p.xcor() <= coll[i][j][2]) and (p.ycor() >= coll[i][j][1] and p.ycor() <= coll[i][j][3]):
+                    hp = hp - 10
+    if hp == 0:
+        print('You died')
+        time.sleep(5)
+        stop()
+    check()
 
 world = [
     '############',
@@ -57,16 +89,11 @@ for row in world:
         x = x + 30
     y = y - 30
 
-#def tile():
-
-# De bouwer
 p.penup()
 p.teleport(-135, 75)
 p.shape('turtle')
 p.color('gold')
 
-# bouw(tegel) zet een tegel op het vakje waar de bouwer staat.
-# Daarna staat de bouwer weer waar hij stond, en kijkt hij dezelfde kant op.
 def build():
     r.setheading(0)
     r.teleport(r.xcor()-15, r.ycor()-15)
@@ -74,8 +101,22 @@ def build():
     rendererReset()
 
 def build_wall():
+    rendererReset()
     r.setheading(0)
-    wall(r.xcor()-15, r.ycor()-15, True)
+    wall(int(r.xcor())-15, int(r.ycor())-15, 1)
+    rendererReset()
+
+def build_lava():
+    rendererReset()
+    x = int(r.xcor())
+    y = int(r.ycor())
+    r.setheading(0)
+    r.teleport(x-15, y-15)
+    cube(30, 'orange', 2)
+    r.teleport(x+5, y+5)
+    r.dot(8, 'darkorange')
+    r.teleport(x-5, y-5)
+    r.dot(8, 'darkorange')
     rendererReset()
 
 def forw30():
@@ -104,6 +145,13 @@ def bckw30():
         pass
     rendererReset()
 
+def ctoggle():
+    global c
+    if c == True:
+        c = False
+    elif c == False:
+        c = True
+
 def collision(hwm:int=30):
     r.forward(hwm)
     rt = False
@@ -122,13 +170,12 @@ def collision(hwm:int=30):
     return rt
 
 def andsy():
-    rt = False
+    if c == True:
+        return False
     for i in range(len(coll[0])):
         if (r.xcor() >= coll[0][i][0] and r.xcor() <= coll[0][i][2]) and (r.ycor() >= coll[0][i][1] and r.ycor() <= coll[0][i][3]):
             return True
     return False
-
-
 
 def rendererReset():
     while p.xcor() != r.xcor():
@@ -138,16 +185,40 @@ def rendererReset():
     while p.heading() != r.heading():
         r.setheading(p.heading())
 
-#def debug():
-#    print(coll)
+def erase():
+    r.teleport(r.xcor()-15, r.ycor()-15)
+    r.setheading(0)
+    cube(30, 'black', 3)
+    rendererReset()
+
+def debug():
+    print('rcor: ' + str(r.xcor()) + ' ' + str(r.ycor()) + ', coll: ' + str(coll) + ', hp: ' + str(hp))
 
 rendererReset()
 
-onkey(forw30, 'Up')
-onkey(gright, 'Right')
-onkey(gleft, 'Left')
-onkey(bckw30, 'Down')
-onkey(build, 'b')
-onkey(build_wall, 'm')
-#onkey(debug, 'd')
-listen()
+# check every 1 second "is on object?"
+def check():
+    global stopped
+    if stopped == False:
+        turtle.ontimer(isonobject, 1000)
+
+check()
+
+def stop():
+    turtle.bye()
+    global stopped
+    stopped = True
+
+turtle.onkey(forw30, 'Up')
+turtle.onkey(gright, 'Right')
+turtle.onkey(gleft, 'Left')
+turtle.onkey(bckw30, 'Down')
+turtle.onkey(build, 'b')
+turtle.onkey(build_wall, 'm')
+turtle.onkey(build_lava, 'l')
+turtle.onkey(debug, 'd')
+turtle.onkey(stop, 's')
+turtle.onkey(ctoggle, ',')
+turtle.onkey(erase, 'e')
+turtle.listen()
+turtle.mainloop()
