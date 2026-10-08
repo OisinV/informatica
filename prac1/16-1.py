@@ -49,6 +49,8 @@ for row in world:
         x = x + 30
     y = y - 30
 
+#def tile():
+
 # De bouwer
 p.penup()
 p.teleport(-135, 75)
@@ -57,9 +59,10 @@ p.color('gold')
 
 # bouw(tegel) zet een tegel op het vakje waar de bouwer staat.
 # Daarna staat de bouwer weer waar hij stond, en kijkt hij dezelfde kant op.
-def build(tile):
+def build():
     r.setheading(0)
-    r.tile(x - 15, y - 15)
+    r.teleport(xcor()-15, ycor()-15)
+    r.cube(30, 'yellow')
     rendererReset()
 
 def forw30():
@@ -115,4 +118,5 @@ onkey(forw30, 'Up')
 onkey(gright, 'Right')
 onkey(gleft, 'Left')
 onkey(bckw30, 'Down')
+onkey(build, 'z')
 listen()
