@@ -1,13 +1,14 @@
 import turtle
 
-speed(0)
 bgcolor('black')
 
 p = turtle.Turtle()
 r = turtle.Turtle()
 
+r.speed(0)
+p.speed(0)
 r.penup()
-r.hideturtle()
+#r.hideturtle()
 
 def cube(size, colour):
     r.pendown()
@@ -59,44 +60,59 @@ p.color('gold')
 def build(tile):
     r.setheading(0)
     r.tile(x - 15, y - 15)
+    rendererReset()
 
 def forw30():
     if collision() == True:
         p.forward(30)
     else:
-        print('No')
+        #print('No')
+        pass
+    rendererReset()
 
 def gright():
     p.right(90)
+    rendererReset()
 
 def gleft():
     p.left(90)
+    rendererReset()
 
 def bckw30():
     if collision() == True:
+        p.right(180)
         p.forward(30)
+        p.right(180)
     else:
-        print('No')
+        #print('No')
+        pass
+    rendererReset()
 
 def collision(hwm:int=30):
     r.forward(hwm)
-    if r.xcor() >= 180:
-        return False
-    elif r.xcor() <= -180:
-        return False
+    rt = False
+    if r.xcor() >= 150:
+        rt = False
+    elif r.xcor() <= -150:
+        rt = False
     elif r.ycor() >= 90:
-        return False
-    elif r.ycor() <= -90:
-        return False
+        rt = False
+    elif r.ycor() <= -60:
+        rt = False
     else:
-        return True
+        rt = True
+    return rt
 
-while p.xcor() != r.xcor():
-    r.teleport(p.xcor(), p.ycor())
-while p.ycor() != r.ycor():
-    r.teleport(p.xcor(), p.ycor())
-while p.heading() != r.heading():
-    r.setheading(p.heading())
+def rendererReset():
+    while p.xcor() != r.xcor():
+        r.teleport(p.xcor(), p.ycor())
+    while p.ycor() != r.ycor():
+        r.teleport(p.xcor(), p.ycor())
+    while p.heading() != r.heading():
+        r.setheading(p.heading())
 
 onkey(forw30, 'Up')
+onkey(gright, 'Right')
+onkey(gleft, 'Left')
+onkey(bckw30, 'Down')
 listen()
