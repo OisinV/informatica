@@ -32,13 +32,17 @@ def cube(size:int, colour:str, collisionAdd:int=0):
             coll[0].append([int(r.xcor()), int(r.ycor()), int(r.xcor())+size, int(r.ycor())+size])
         case 2:
             coll[1].append([int(r.xcor()), int(r.ycor()), int(r.xcor())+size, int(r.ycor())+size])
-        case 3:
+        case -1:
+            # add "is within these coörds so delete" function, what to do?:
+            # Check if it is with one of the coörds and then delete those coörds
             for i in range(len(coll)):
-                try:
-                    coll[i].remove([int(r.xcor()), int(r.ycor()), int(r.xcor())+size, int(r.ycor())+size])
-                    break
-                except ValueError:
-                    pass
+                for j in range(len(coll[i])):
+                    if (p.xcor() >= coll[i][j][0] and p.xcor() <= coll[i][j][2]) and (p.ycor() >= coll[i][j][1] and p.ycor() <= coll[i][j][3]):
+                        try:
+                            coll[i].remove([int(r.xcor()), int(r.ycor()), int(r.xcor())+size, int(r.ycor())+size])
+                            break
+                        except ValueError:
+                            pass
         case _:
             pass
     for _ in range(4):
@@ -64,7 +68,7 @@ def isonobject():
             for j in range(len(coll[i])):
                 if (p.xcor() >= coll[i][j][0] and p.xcor() <= coll[i][j][2]) and (p.ycor() >= coll[i][j][1] and p.ycor() <= coll[i][j][3]):
                     hp = hp - 10
-    if hp == 0:
+    if hp <= 0:
         print('You died')
         time.sleep(5)
         stop()
@@ -178,17 +182,13 @@ def andsy():
     return False
 
 def rendererReset():
-    while p.xcor() != r.xcor():
-        r.teleport(p.xcor(), p.ycor())
-    while p.ycor() != r.ycor():
-        r.teleport(p.xcor(), p.ycor())
-    while p.heading() != r.heading():
-        r.setheading(p.heading())
+    r.teleport(p.xcor(), p.ycor())
+    r.setheading(p.heading())
 
 def erase():
     r.teleport(r.xcor()-15, r.ycor()-15)
     r.setheading(0)
-    cube(30, 'black', 3)
+    cube(30, 'black', -1)
     rendererReset()
 
 def debug():
