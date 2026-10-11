@@ -3,7 +3,7 @@ import time
 import math
 from collections import deque
 
-turtle.bgcolor('black')
+turtle.screensize(400, 300, 'black')
 
 coll = [ # pattern: x top left, y top left, x bottom right, y bottom right
     [ # wall sets:
@@ -13,8 +13,12 @@ coll = [ # pattern: x top left, y top left, x bottom right, y bottom right
         [-200, -200, -200, -200]
     ]
 ]
+
+actqueue: list[object] = []
+busy = False
+
 c = False
-hp, mhp = 100, 100
+hp, mhp, oldhp = 100, 100, 100
 stopped = False
 monact = False
 
@@ -40,7 +44,34 @@ m.penup()
 dt.speed(0)
 dt.color('orange')
 
+def hpbar():
+    global busy
+    busy = True
+    r.teleport(-50, -100)
+    r.setheading(0)
+    r.pendown()
+    r.fillcolor('red')
+    r.begin_fill()
+    for _ in range(2):
+        r.forward(100)
+        r.right(90)
+        r.forward(20)
+        r.right(90)
+    r.end_fill()
+    r.fillcolor('green')
+    r.begin_fill()
+    for _ in range(2):
+        r.forward(10*round(hp/10))
+        r.right(90)
+        r.forward(20)
+        r.right(90)
+    r.end_fill()
+    r.penup()
+    busy = False
+
 def cube(size:int, colour:str, collisionAdd:int=0):
+    global busy
+    busy = True
     r.pendown()
     r.fillcolor(colour)
     r.begin_fill()
@@ -56,19 +87,26 @@ def cube(size:int, colour:str, collisionAdd:int=0):
         r.left(90)
     r.end_fill()
     r.penup()
+    busy = False
 
 def wall(x:int, y:int, collisionAdd:int=0):
+    global busy
+    busy = True
     r.teleport(x, y)
     cube(30, 'dimgray', collisionAdd)
+    busy = False
 
 def chest(x:int, y:int):
+    global busy
+    busy = True
     r.teleport(x, y)
     cube(30, 'saddlebrown')
     r.teleport(x + 15, y + 15)
     r.dot(8, 'gold')
+    busy = False
 
 def isonobject():
-    global hp, mhp
+    global hp, mhp, oldhp
     if c == False:
         for i in range(1, len(coll)):
             for j in range(len(coll[i])):
@@ -83,6 +121,11 @@ def isonobject():
         monstermove()
     elif not monact:
         m.hideturtle()
+    if isclose():
+        hp -= 10
+    if hp != oldhp:
+        oldhp = hp
+        hpbar()
     check()
 
 def monstermove():
@@ -177,16 +220,15 @@ p.color('gold')
 m.teleport(135, -45)
 
 def build():
+    rendererReset()
     r.setheading(0)
     r.teleport(r.xcor()-15, r.ycor()-15)
     cube(30, 'yellow')
-    rendererReset()
 
 def build_wall():
     rendererReset()
     r.setheading(0)
     wall(int(r.xcor())-15, int(r.ycor())-15, 1)
-    rendererReset()
 
 def build_lava():
     rendererReset()
@@ -199,7 +241,6 @@ def build_lava():
     r.dot(8, 'darkorange')
     r.teleport(x-5, y-5)
     r.dot(8, 'darkorange')
-    rendererReset()
 
 def forw30():
     if collision():
@@ -207,15 +248,12 @@ def forw30():
     else:
         #print('No')
         pass
-    rendererReset()
 
 def gright():
     p.right(90)
-    rendererReset()
 
 def gleft():
     p.left(90)
-    rendererReset()
 
 def bckw30():
     if collision(turn=180):
@@ -223,7 +261,6 @@ def bckw30():
     else:
         #print('No')
         pass
-    rendererReset()
 
 def ctoggle():
     global c
@@ -236,6 +273,18 @@ def monsteracon():
     global monact
     monact = True
     m.showturtle()
+
+def isclose(at:turtle.Turtle=m, pt:turtle.Turtle=p):
+    acor: tuple[int, int, int, int] = (int(at.xcor())-45, int(at.ycor())-45, int(at.xcor())+45, int(at.ycor())+45)
+    pxcor = pt.xcor()
+    pycor = pt.ycor()
+
+    x1, y1, x2, y2 = acor
+    
+    if x1 <= pxcor <= x2 and y1 <= pycor <= y2:
+        return True
+    else:
+        return False
 
 def isblock(x:int, y:int, at:turtle.Turtle=p):
     if x <= -150 or x >= 150:
@@ -269,6 +318,7 @@ def rendererReset(art:turtle.Turtle=r, aet:turtle.Turtle=p): # active renderer t
     art.setheading(aet.heading())
 
 def erase():
+    rendererReset()
     r.teleport(r.xcor()-15, r.ycor()-15)
     r.setheading(0)
 
@@ -281,12 +331,8 @@ def erase():
         if t in layer:
             layer.remove(t)
 
-    rendererReset()
-
 def debug():
     print(coll)
-
-rendererReset()
 
 # check every 1 second "is on object?"
 def check():
@@ -294,12 +340,40 @@ def check():
     if stopped == False:
         turtle.ontimer(isonobject, 1000)
 
+hpbar()
 check()
 
 def stop():
     turtle.bye()
     global stopped
     stopped = True
+
+def act_forw30():
+    actqueue.append(forw30)
+
+def act_gright():
+    actqueue.append(gright)
+
+def act_gleft():
+    actqueue.append(gleft)
+
+def act_bckw30():
+    actqueue.append(bckw30)
+
+def act_build():
+    actqueue.append(build)
+
+def act_build_wall():
+    actqueue.append(build_wall)
+
+def act_build_lava():
+    actqueue.append(build_lava)
+
+def act_erase():
+    actqueue.append(erase)
+
+while actqueue and not busy:
+    actqueue.pop(0)() # type:ignore
 
 turtle.onkey(forw30, 'Up')
 turtle.onkey(gright, 'Right')
