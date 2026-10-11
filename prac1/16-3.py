@@ -15,23 +15,29 @@ coll = [ # pattern: x top left, y top left, x bottom right, y bottom right
 c = False
 hp, mhp = 100, 100
 stopped = False
+monact = False
 
 p = turtle.Turtle()
 r = turtle.Turtle()
 
 # collision for monster + monster (needs implementation)
-mc = turtle.Turtle()
 m = turtle.Turtle()
+
+# debug turtle
+#d = turtle.Turtle()
 
 r.speed(0)
 p.speed(0)
-mc.speed(0)
 m.speed(0)
+
 r.penup()
 r.hideturtle()
-mc.penup()
-mc.hideturtle()
+
+m.color('green')
 m.penup()
+
+#d.speed(0)
+#d.color('orange')
 
 def cube(size:int, colour:str, collisionAdd:int=0):
     r.pendown()
@@ -81,7 +87,10 @@ def isonobject():
         print('You died')
         time.sleep(5)
         stop()
-    monstermove()
+    if monact:
+        monstermove()
+    elif not monact:
+        m.hideturtle()
     check()
 
 def monstermove():
@@ -90,22 +99,20 @@ def monstermove():
     turnamount = math.degrees(math.atan2(dy, dx))
     
     turnamount = round(turnamount / 90) * 90
-    t = turnamount
 
     m.setheading(turnamount)
     
-    if collision(at=mc, aet=mc) == True:
+    if collision(at=m) == True:
         m.forward(30)
-    elif collision(at=mc, turn=90, aet=mc) == True:
+    elif collision(at=m, turn=90) == True:
         m.right(90)
         m.forward(30)
-    elif collision(at=mc, turn=-90, aet=mc) == True:
+    elif collision(at=m, turn=-90) == True:
         m.right(-90)
         m.forward(30)
-    elif collision(at=mc, turn=180, aet=mc) == True:
+    elif collision(at=m, turn=180) == True:
         m.right(180)
         m.forward(30)
-    rendererReset(art=mc, aet=m)
 
 world = [
     '############',
@@ -162,7 +169,7 @@ def build_lava():
     rendererReset()
 
 def forw30():
-    if collision() == True:
+    if collision():
         p.forward(30)
     else:
         #print('No')
@@ -178,13 +185,11 @@ def gleft():
     rendererReset()
 
 def bckw30():
-    r.right(180)
-    if collision() == True:
+    if collision(turn=180):
         p.backward(30)
     else:
         #print('No')
         pass
-    r.right(180)
     rendererReset()
 
 def ctoggle():
@@ -194,13 +199,18 @@ def ctoggle():
     elif c == False:
         c = True
 
-def isblock(x):
+def monsteracon():
+    global monact
+    monact = True
+    m.showturtle()
+
+def isblock(x:int, y:int, at:turtle.Turtle=p):
     if x <= -150 or x >= 150:
         return True
     if y <= -60 or y >= 90:
         return True
     
-    if c:
+    if c == True and at == p:
         return False
     
     for x1, y1, x2, y2 in coll[0]:
@@ -209,32 +219,16 @@ def isblock(x):
     
     return False
 
-def collision(hwm:int=30, at:turtle.Turtle=r, turn:int=0, aet:turtle.Turtle=p):
-    rendererReset(at, aet)
-    if turn != 0: at.right(turn)
-    at.forward(hwm)
-    rt = False
-    if at.xcor() >= 150:
-        rt = False
-    elif at.xcor() <= -150:
-        rt = False
-    elif at.ycor() >= 90:
-        rt = False
-    elif at.ycor() <= -60:
-        rt = False
-    elif andsy(at) == True:
-        rt = False
-    else:
-        rt = True
-    return rt
+def des(at:turtle.Turtle, headto:float, step:int=30):
+    theta = math.radians(headto)
+    x = round(at.xcor() + math.cos(theta) * step)
+    y = round(at.ycor() + math.sin(theta) * step)
+    return x, y
 
-def andsy(at:turtle.Turtle=r):
-    if c == True:
-        return False
-    for i in range(len(coll[0])):
-        if (at.xcor() >= coll[0][i][0] and at.xcor() <= coll[0][i][2]) and (at.ycor() >= coll[0][i][1] and at.ycor() <= coll[0][i][3]):
-            return True
-    return False
+def collision(hwm:int=30, at:turtle.Turtle=p, turn:int=0):
+    headto = (at.heading()-turn)%360
+    x, y = des(at, headto, hwm)
+    return not isblock(x, y, at)
 
 def rendererReset(art:turtle.Turtle=r, aet:turtle.Turtle=p): # active renderer turtle, active entity turtle
     art.teleport(aet.xcor(), aet.ycor())
@@ -275,5 +269,6 @@ turtle.onkey(build_lava, 'l')
 turtle.onkey(stop, 's')
 turtle.onkey(ctoggle, ',')
 turtle.onkey(erase, 'e')
+turtle.onkey(monsteracon, '0')
 turtle.listen()
 turtle.mainloop()
