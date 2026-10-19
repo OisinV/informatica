@@ -177,18 +177,21 @@ def omlaag():
     p.setheading(270)
 #    p.forward(GridStepSize)
 
-# Tick Loop (elke 1s)
+# Tick Loops
+def InitLoops():
+    WalkLoop()
+    TickLoop()
 def TickLoop():
     # blinky, inky, pinky, clyde not yet finished
     ontimer(TickLoop, 500)
 def WalkLoop():
     p.forward(30)
     t = 0
-    min(20 - 5 * level)
+    max(20 - 5 * level, 0)
     time = 500 / (1-t*0.01)
     ontimer(WalkLoop, time)
 
-TickLoop()
+InitLoops()
 
 onkey(rechts, 'Right')
 onkey(links, 'Left')
