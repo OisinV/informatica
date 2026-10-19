@@ -37,10 +37,10 @@ def WorldMaker():
             x = -180
             for char in row:
                 if char == '#':
-                    wall(x, y)
+                    TeleportCube(x, y)
                 if char == '.':
                     saw.teleport(x, y)
-                    cube(30, 'black')
+                    Cube(30, 'black')
                 x = x + 30
             y = y - 30
     else:
