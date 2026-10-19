@@ -4,3 +4,5 @@
 # Also abbreviated to CUTU
 
 from .PathAndCollision import *
+from .ExceptionClasses import *
+from .ShapesAndWorlds import *
