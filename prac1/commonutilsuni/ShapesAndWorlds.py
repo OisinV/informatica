@@ -46,4 +46,10 @@ def WorldMaker():
     else:
         raise _NotInitialisedError("Please initialise the code by using WorldInitialise!")
 
+def Template():
+    if intialised:
+        pass
+    else:
+        raise _NotInitialisedError("Please initialise the code by using WorldInitialise!")
+
 __all__ = ["WorldInitialise", "WorldMaker"]
