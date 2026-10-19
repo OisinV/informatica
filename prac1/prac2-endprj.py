@@ -1,6 +1,5 @@
 import turtle
 from collections import deque
-import time
 import math
 
 # Ons spel:
@@ -15,8 +14,16 @@ p.bgcolor('black')
 
 begin_x = -240
 begin_y = 150
-gStepSize = 30
 collision: dict[tuple[int, int, int, int],int] = {}
+
+GridOriginX = 15
+GridOriginY = 15
+GridStepSize = int(round(GridStep))
+
+WorldBiggestX = 240
+WorldSmallestX = -240
+WorldBiggestY = by
+WorldSmallestY = sy
 
 def blok(maat, kleur):
     p.fillcolor(kleur)
@@ -66,7 +73,14 @@ for rij in wereld:
         x = x + 30
     y = y - 30
 
-# AI
+# tick loop
+def timed():
+    turtle.ontimer(Tick, 500)
+
+def Tick():
+    blinky()
+
+# Standard AI
 def bfs(x:int, y:int, ai:turtle.Turtle):
     currpos = (round(ai.xcor()), round(ai.ycor())) # current position
     tarpos = (x, y) # target position
@@ -154,11 +168,10 @@ def omlaag():
     p.setheading(270)
     p.forward(gStepSize)
 
-# Tick Loop (elke 1s)
-
-
 onkey(rechts, 'Right')
 onkey(links, 'Left')
 onkey(omhoog, 'Up')
 onkey(omlaag, 'Down')
 listen()
+
+# Blink = 6s
