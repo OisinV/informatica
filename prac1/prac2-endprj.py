@@ -463,7 +463,8 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         return False
     
     qeue = deque([Start])
-    parent: dict[tuple[int, int], tuple[int, int] | None] = {Start:None}
+    # Child (x, y or x, y, rotation) : Parent (x, y)
+    parent: dict[tuple[int, int] | tuple[int, int, int], tuple[int, int] | None] = {Start:None}
 
     while qeue:
         current = qeue.popleft()
