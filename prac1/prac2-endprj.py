@@ -2,10 +2,13 @@ import turtle
 from collections import deque
 import math
 from typing import Any
+#from playsound import playsound
+
+#playsound('pacman.mp3')
 
 # Ons spel: Pac-Man
 # De held: Pac-Man
-# Het doel: Alle wite bolletjes verzamelen
+# Het doel: Alle wite bolletjes verzamelen (en naar level 255 te gaan)
 # Wat houdt de held tegen: 4 Spoken: inky, blinky, pinky en clyde
 
 # Object ID list:
@@ -356,7 +359,7 @@ wereld = [
     '.#oooo#ooo#ooo#oooo#.',
     '.####o###o#o###o####.',
     '....#o#ooooooo#o#....',
-    '.####o#o##.##o#o####.',
+    '.####o#o##d##o#o####.',
     't....ooo#...#ooo....t',
     '.####o#o#####o#o####.',
     '....#o#ooooooo#o#....',
@@ -366,7 +369,7 @@ wereld = [
     '.#*o#ooooooooooo#o*#.',
     '.##o#o#o#####o#o#o##.',
     '.#oooo#ooo#ooo#oooo#.',
-    '.#o######ooo######o#.',
+    '.#o######o#o######o#',
     '.#ooooooooooooooooo#.',
     '.###################.',
     
@@ -464,7 +467,7 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
     
     qeue = deque([Start])
     # Child (x, y or x, y, rotation) : Parent (x, y)
-    parent: dict[tuple[int, int] | tuple[int, int, int], tuple[int, int] | None] = {Start:None}
+    parent: dict[dict[tuple[int, int],int] dict[tuple[int, int],int] | None] = {Start:None}
 
     while qeue:
         current = qeue.popleft()
@@ -475,7 +478,8 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         for dx, dy in directions:
             nx = current[0] + dx
             ny = current[1] + dy
-            nxt = (nx, ny)
+            nr = directions[nx, ny]
+            nxt = (nx, ny, nr)
 
             if nxt in parent:
                 continue
@@ -529,7 +533,7 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
 
 # De held
 p.penup()
-p.teleport(begin_x + 45, begin_y - 15)
+p.teleport(45, -315)
 p.shape('turtle')
 p.color('gold')
 
@@ -614,20 +618,20 @@ def WalkLoop():
             Remove_Collision_Object(p.xcor(), p.ycor(), size=30, TypeID=2)
             Dots -= 1
             Points += 10
-            r.teleport(p.xcor()-15, p.ycor()-15)
+            r.teleport(p.xcor()-14, p.ycor()-14)
             r.setheading(0)
             r.penup()
-            blok(30, 'black')
+            blok(28, 'black')
             r.pendown()
 
         if TypeID == 3:
             Remove_Collision_Object(p.xcor(), p.ycor(), size=30, TypeID=3)
             Dots -= 1
             Points += 50
-            r.teleport(p.xcor()-15, p.ycor()-15)
+            r.teleport(p.xcor()-14, p.ycor()-14)
             r.setheading(0)
             r.penup()
-            blok(30, 'black')
+            blok(28, 'black')
             r.pendown()
 
     if debug:
