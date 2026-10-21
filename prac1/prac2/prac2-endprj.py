@@ -46,7 +46,7 @@ WorldSmallestY = -660
 
 level = 0
 Points = 0
-Dots = 244
+Dots = 0
 
 # X, Y Distance Calculator
 def Distance_Calculator(x1:int|float, y1:int|float, x2:int|float, y2:int|float):
@@ -267,12 +267,13 @@ def Remove_Collision_Object(
     s = False
 
     def deletus():
-            c = collision[collisionobj][1]
-            v = collision[collisionobj][0]
-            ObjData[c]['Disabled'] = True
-            ObjData[c]['Type'] = v
-            collision[collisionobj] = (-1, c)
-            s = True # type:ignore
+        nonlocal s
+        c = collision[collisionobj][1]
+        v = collision[collisionobj][0]
+        ObjData[c]['Disabled'] = True
+        ObjData[c]['Type'] = v
+        collision[collisionobj] = (-1, c)
+        s = True # type:ignore
 
     if collisionobj in collision:
         if isinstance(TypeID, tuple):
@@ -372,13 +373,13 @@ wereld = [
     '.#ooooooooooooooooo#.',
     '.#o##o#o#####o#o##o#.',
     '.#oooo#ooo#ooo#oooo#.',
-    '.####o###o#o###o####.',
-    '....#o#ooooooo#o#....',
-    '.####o#o##d##o#o####.',
-    't....ooo#...#ooo....t',
-    '.####o#o#####o#o####.',
-    '....#o#ooooooo#o#....',
-    '.####o#o#####o#o####.',
+    '.####o###.#.###o####.',
+    '....#o#.......#o#....',
+    '.####o#.##d##.#o####.',
+    't....o..#...#..o....t',
+    '.####o#.#####.#o####.',
+    '....#o#.......#o#....',
+    '.####o#.#####.#o####.',
     '.#oooooooo#oooooooo#.',
     '.#o##o###o#o###o##o#.',
     '.#*o#ooooooooooo#o*#.',
@@ -390,36 +391,44 @@ wereld = [
     
 ]
 
-r.color('blue')
-y = begin_y
-for rij in wereld:
-    x = begin_x
-    for teken in rij:
-        if teken == '#':
-            Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=0)
-            muur(x, y)
-        if teken == 't':
-            TeleporterCreator(x, y)
-        if teken == 'o':
-            Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=2)
-            puntje(x+round(GridStepSize/2), y+round(GridStepSize/2))
-        if teken == '*':
-            Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=3)
-            puntje(x+round(GridStepSize/2), y+round(GridStepSize/2), 14)
-        x = x + 30
-    y = y - 30
-
-def ResetDots():
+def world(colour:str='blue'):
+    r.color(colour)
     y = begin_y
-    for row in wereld:
+    for rij in wereld:
         x = begin_x
-        for char in row:
-            if char == 'o':
+        for teken in rij:
+            if teken == '#':
+                Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=0)
+                muur(x, y)
+            if teken == 't':
+                TeleporterCreator(x, y)
+            x = x + 30
+        y = y - 30
+
+def DotLoad():
+    global Dots
+    y = begin_y
+    for rij in wereld:
+        x = begin_x
+        for teken in rij:
+            if teken == 'o':
+                Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=2)
                 puntje(x+round(GridStepSize/2), y+round(GridStepSize/2))
-            if char == '*':
+                Dots += 1
+            if teken == '*':
+                Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=3)
                 puntje(x+round(GridStepSize/2), y+round(GridStepSize/2), 14)
-            x += 30
-        y -= 30
+                Dots += 1
+            x = x + 30
+        y = y - 30
+
+world()
+DotLoad()
+
+def LevelUp():
+    for _ in range(4):
+        for c in ['yellow', 'blue']:
+            world(c)
 
 # AI
 def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|float, GoalY:int|float):
@@ -572,14 +581,22 @@ TarPinky = (-165, 135)
 TarClyde = (-165, -435)
 
 blg = turtle.Turtle()
+blg.speed(0)
 blg.color('red')
 blg.penup()
-blg.teleport(TarBlinky)
+blg.teleport(*TarBlinky)
 
 pig = turtle.Turtle()
-blg.color('pink')
-blg.penup()
-blg.teleport(TarPinky)
+pig.speed(0)
+pig.color('deeppink')
+pig.penup()
+pig.teleport(*TarPinky)
+
+ing = turtle.Turtle()
+ing.speed(0)
+ing.color('cyan')
+ing.penup()
+ing.teleport(*TarInky)
 
 # Modes
 def scatter():
@@ -598,7 +615,8 @@ def chase():
     else:
         HeadingBugged = p.heading()
 
-    tile2Pac = Destination_Calculator(*pcor, HeadingBugged, 60) # Calc 2 tiles ahead of pacman
+    # Calc 2 tiles ahead of pacman (30 * 2)
+    tile2Pac = Destination_Calculator(*pcor, HeadingBugged, 60)
 
     TarBlinky = pcor
     TarPinky = Destination_Calculator(*pcor, p.heading(), 120)
@@ -644,7 +662,8 @@ def teleportertp(ObjID:int, TargetTurtle:turtle.Turtle):
         x:int = Portal2Data['TeleportPointX'] # type:ignore
         y:int = Portal2Data['TeleportPointY'] # type:ignore
         TargetTurtle.teleport(x, y) # type:ignore
-        TargetTurtle.setheading((180+TargetTurtle.heading())%360)
+        #TargetTurtle.setheading((180-TargetTurtle.heading())%360)
+        #print(str((180-TargetTurtle.heading())%360))
         TargetTurtle.forward(GridStepSize)
 
 # Tick Loops
@@ -659,7 +678,7 @@ def TickLoop():
     if Dots == 0:
         level += 1
         Dots = 244
-        ResetDots()
+        LevelUp()
      
     LevelTimeElapsed += 1
     # blinky, inky, pinky, clyde not yet finished (each their own loop)
@@ -713,6 +732,7 @@ def WalkLoop():
             r.penup()
             blok(28, 'black')
             r.pendown()
+        print(Dots)
 
     if debug:
         print(p.xcor(), p.ycor())
@@ -721,7 +741,7 @@ def WalkLoop():
 
     max(20 - 5 * level, 0)
 
-    time = int(round(500 / (1-t*0.01)))
+    time = int(round(142 / (1-t*0.01)))
 
     turtle.ontimer(WalkLoop, time)
 
