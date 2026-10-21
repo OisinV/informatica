@@ -2,7 +2,7 @@ import turtle
 from collections import deque
 import math
 from typing import Any
-from playsound3 import playsound #type:ignore
+from playsound import playsound
 
 # Ons spel: Pac-Man
 # De held: Pac-Man
@@ -47,6 +47,13 @@ WorldSmallestY = -660
 level = 0
 Points = 0
 Dots = 244
+
+# X, Y Distance Calculator
+def Distance_Calculator(x1:int|float, y1:int|float, x2:int|float, y2:int|float):
+    x = abs(x1 - x2)
+    y = abs(y1 - y2)
+
+    return x, y
 
 # Grid
 def On_Grid(x:int|float, y:int|float) -> bool:
@@ -491,6 +498,7 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         if current == Goal:
             break
 
+        # Remove opposite direction
         TempDirections = directions
         Parentof = parent[*current]
         if Parentof != None:
@@ -558,18 +566,43 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
 
     return heading
 
-# Modes
 TarBlinky = (315, 135)
 TarInky = (315, -435)
 TarPinky = (-165, 135)
 TarClyde = (-165, -435)
 
+blg = turtle.Turtle()
+blg.color('red')
+blg.penup()
+blg.teleport(TarBlinky)
+
+pig = turtle.Turtle()
+blg.color('pink')
+blg.penup()
+blg.teleport(TarPinky)
+
+# Modes
 def scatter():
     global TarBlinky, TarInky, TarPinky, TarClyde
     TarBlinky = (315, 135)
     TarInky = (315, -435)
     TarPinky = (-165, 135)
     TarClyde = (-165, -435)
+
+def chase():
+    px, py = (p.xcor(), p.ycor())
+    pcor = (px, py)
+
+    if int(round(p.heading())) == 90:
+        HeadingBugged = 45
+    else:
+        HeadingBugged = p.heading()
+
+    tile2Pac = Destination_Calculator(*pcor, HeadingBugged, 60) # Calc 2 tiles ahead of pacman
+
+    TarBlinky = pcor
+    TarPinky = Destination_Calculator(*pcor, p.heading(), 120)
+    TarInky = Distance_Calculator(*tile2Pac, blg.xcor(), blg.ycor())
 
 # Blinky
 
@@ -615,16 +648,20 @@ def teleportertp(ObjID:int, TargetTurtle:turtle.Turtle):
         TargetTurtle.forward(GridStepSize)
 
 # Tick Loops
+LevelTimeElapsed = 0
+
 def InitLoops():
     WalkLoop()
     TickLoop()
 
 def TickLoop():
-    global level, Dots
+    global level, Dots, LevelTimeElapsed
     if Dots == 0:
         level += 1
         Dots = 244
         ResetDots()
+     
+    LevelTimeElapsed += 1
     # blinky, inky, pinky, clyde not yet finished (each their own loop)
     turtle.ontimer(TickLoop, 500)
 
