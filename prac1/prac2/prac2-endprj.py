@@ -2,6 +2,7 @@ import turtle
 from collections import deque
 import math
 from typing import Any
+import time
 from playsound import playsound
 
 # Ons spel: Pac-Man
@@ -598,6 +599,12 @@ ing.color('cyan')
 ing.penup()
 ing.teleport(*TarInky)
 
+clg = turtle.Turtle()
+clg.speed(0)
+clg.color('sandybrown')
+clg.penup()
+clg.teleport(*TarClyde)
+
 # Modes
 def scatter():
     global TarBlinky, TarInky, TarPinky, TarClyde
@@ -612,15 +619,29 @@ def chase():
 
     if int(round(p.heading())) == 90:
         HeadingBugged = 45
+        Step = 84.853
     else:
         HeadingBugged = p.heading()
+        Step = 60
 
     # Calc 2 tiles ahead of pacman (30 * 2)
-    tile2Pac = Destination_Calculator(*pcor, HeadingBugged, 60)
+    tile2Pac = Destination_Calculator(*pcor, HeadingBugged, Step)
+
+    ClydeCor = pcor
+    if clg.distance(p.xcor(), p.ycor()):
+        ClydeCor = TarClyde
 
     TarBlinky = pcor
     TarPinky = Destination_Calculator(*pcor, p.heading(), 120)
     TarInky = Distance_Calculator(*tile2Pac, blg.xcor(), blg.ycor())
+    TarClyde = ClydeCor
+
+t = time.time()
+
+def TimeDifference():
+    return time.time() - t
+
+
 
 # Blinky
 
@@ -628,7 +649,7 @@ def chase():
 # De held
 p.penup()
 p.teleport(45, -315)
-p.shape('turtle')
+p.shape('circle')
 p.color('gold')
 
 def rechts():
@@ -732,7 +753,7 @@ def WalkLoop():
             r.penup()
             blok(28, 'black')
             r.pendown()
-        print(Dots)
+        #print(Dots)
 
     if debug:
         print(p.xcor(), p.ycor())
