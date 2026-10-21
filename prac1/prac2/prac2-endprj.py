@@ -2,9 +2,7 @@ import turtle
 from collections import deque
 import math
 from typing import Any
-#from playsound import playsound
-
-#playsound('pacman.mp3')
+from playsound3 import playsound #type:ignore
 
 # Ons spel: Pac-Man
 # De held: Pac-Man
@@ -50,7 +48,7 @@ level = 0
 Points = 0
 Dots = 244
 
-# Collision
+# Grid
 def On_Grid(x:int|float, y:int|float) -> bool:
     if GridStepSize <= 0:
         raise RuntimeError(
@@ -65,6 +63,16 @@ def On_Grid(x:int|float, y:int|float) -> bool:
         and (y - GridOriginY) % GridStepSize == 0
     )
 
+def GridCoords(x:int|float,y:int|float):
+    if GridStepSize <= 0:
+        raise RuntimeError(
+            "You need to initialize the Grid Step Size before using most of this module!\nUse Set_Grid() with GridStep as not blank."
+        )
+    x = int(round(((x-GridOriginX) / GridStepSize))*GridStepSize + GridOriginX)
+    y = int(round(((y-GridOriginY) / GridStepSize))*GridStepSize + GridOriginY)
+    return x, y
+
+# Collision
 def Collision_Coord_Check(
         x:int|float,
         y:int|float,
@@ -428,7 +436,13 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         if PorDat['Disabled'] or LinkDat['Disabled']:
             return None
 
-        return LinkDat['TeleportPointX'], LinkDat['TeleportPointY'] #type:ignore
+        LinkTPX = LinkDat['TeleportPointX'] #type:ignore
+        LinkTPY = LinkDat['TeleportPointY'] #type:ignore
+
+        if not On_Grid(LinkTPX, LinkTPY): #type:ignore
+            LinkTPX, LinkTPY = GridCoords(LinkTPX, LinkTPY) #type:ignore
+
+        return LinkTPX, LinkTPY #type:ignore
     
     global GridStepSize
     if GridStepSize <= 0:
@@ -437,21 +451,23 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
 
     StartHeadto = int(float(StartHeading))
     Start:tuple[int, int] = (int(round(StartX)), int(round(StartY)))
+    MovStart = (StartHeadto, *Start)
     Goal:tuple[int, int] = (int(round(GoalX)), int(round(GoalY)))
     directions = { # all difference, so use dx, dy for calling :) (took me too long)
-        0: (GridSize, 0), # east 0
-        90: (0, GridSize), # north 90
-        180: (-GridSize, 0), # west 180
-        270: (0, -GridSize) # south 270
+        0 : (GridSize, 0), # east 0
+        90 : (0, GridSize), # north 90
+        180 : (-GridSize, 0), # west 180
+        270 : (0, -GridSize) # south 270
     }
-    directions.pop(360-StartHeadto)
-    direcval = list(directions.values())
-    direckeys = list(directions.keys())
-    directions = {
-        direcval[0]: direckeys[0],
-        direcval[1]: direckeys[1],
-        direcval[2]: direckeys[2]
-    }
+    #directions.pop((StartHeadto + 180)%360)
+    #direcval = list(directions.values())
+    #direckeys = list(directions.keys())
+    #directions = {
+    #    direcval[0]: direckeys[0],
+    #    direcval[1]: direckeys[1],
+    #    direcval[2]: direckeys[2],
+    #    direcval[3]: direckeys[3]
+    #}
 
     if not On_Grid(StartX, StartY):
         return False
@@ -466,8 +482,8 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         return False
     
     qeue = deque([Start])
-    # Child (x, y or x, y, rotation) : Parent (x, y)
-    parent: dict[dict[tuple[int, int],int] dict[tuple[int, int],int] | None] = {Start:None}
+    # Child (rotation, x, y) : Parent (rotation, x, y)
+    parent: dict[tuple[int, int],tuple[int, int, int] | None] = {Start:None}
 
     while qeue:
         current = qeue.popleft()
@@ -475,30 +491,52 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         if current == Goal:
             break
 
-        for dx, dy in directions:
+        TempDirections = directions
+        Parentof = parent[*current]
+        if Parentof != None:
+            RotationPar = Parentof[0]
+        else:
+            RotationPar = StartHeadto
+
+        RotationElim = (RotationPar+180)%360
+        TempDirections.pop(RotationElim)
+
+        for rotation in TempDirections:
+            dx, dy = TempDirections[rotation]
             nx = current[0] + dx
             ny = current[1] + dy
-            nr = directions[nx, ny]
-            nxt = (nx, ny, nr)
+            nxt = (nx, ny)
 
+            # Check if already a child
             if nxt in parent:
                 continue
 
+            # Collision check
             if Collision_Coord_Check(nx, ny) in CollisionIDs:
                 continue
 
-            if Collision_Coord_Check(*nxt) == 1:
-                des: tuple[int, int]|None = TeleporterDesti(*current) #type:ignore
-                if des != None and des not in parent:
-                    xdes = des[0] + dx
-                    ydes = des[1] + dy
+            # Check if the next block is a portal and then change coords to destination of portal
+            if Collision_Coord_Check(nxt[0], nxt[1]) == 1:
+                des: tuple[int, int]|None = TeleporterDesti(*nxt) #type:ignore
+                if des != None:
+                    ReverseRotation = (rotation+180)%360
+                    tdx, tdy = directions[ReverseRotation]
+                    xdes = des[0] + tdx
+                    ydes = des[1] + tdy
                     CorrDes = (xdes, ydes)
-                    parent[CorrDes] = current
+
+                    if CorrDes in parent:
+                        continue
+
+                    if Collision_Coord_Check(*CorrDes) in CollisionIDs: #type:ignore
+                        continue
+
+                    parent[CorrDes] = (ReverseRotation, *current)
                     qeue.append(CorrDes)
             
             else:
-                parent[nxt] = current
-                qeue.append(nxt)
+                parent[nxt[0], nxt[1]] = (rotation, *current)
+                qeue.append((nxt[0], nxt[1]))
 
     if Goal not in parent:
         return
@@ -511,22 +549,27 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         if previous == None:
             return
 
-        if previous == Start:
+        if (previous[0], previous[1]) == Start:
             break
 
-        step = previous
+        step = (previous[0], previous[1])
 
-    dx = step[0] - Start[0]
-    dy = step[1] - Start[1]
-
-    heading = {
-        (GridSize, 0): 0,
-        (0, GridSize): 90,
-        (-GridSize, 0): 180,
-        (0, -GridSize): 270
-    }[(dx, dy)]
+    heading = previous[2]
 
     return heading
+
+# Modes
+TarBlinky = (315, 135)
+TarInky = (315, -435)
+TarPinky = (-165, 135)
+TarClyde = (-165, -435)
+
+def scatter():
+    global TarBlinky, TarInky, TarPinky, TarClyde
+    TarBlinky = (315, 135)
+    TarInky = (315, -435)
+    TarPinky = (-165, 135)
+    TarClyde = (-165, -435)
 
 # Blinky
 
@@ -568,7 +611,7 @@ def teleportertp(ObjID:int, TargetTurtle:turtle.Turtle):
         x:int = Portal2Data['TeleportPointX'] # type:ignore
         y:int = Portal2Data['TeleportPointY'] # type:ignore
         TargetTurtle.teleport(x, y) # type:ignore
-        TargetTurtle.setheading(360-TargetTurtle.heading())
+        TargetTurtle.setheading((180+TargetTurtle.heading())%360)
         TargetTurtle.forward(GridStepSize)
 
 # Tick Loops
@@ -645,12 +688,16 @@ def WalkLoop():
 
     turtle.ontimer(WalkLoop, time)
 
+def DebugPost():
+    print(str(p.xcor()) + ', ' + str(p.ycor()))
+
 InitLoops()
 
 turtle.onkey(rechts, 'Right')
 turtle.onkey(links, 'Left')
 turtle.onkey(omhoog, 'Up')
 turtle.onkey(omlaag, 'Down')
+turtle.onkey(DebugPost, 'd')
 turtle.listen()
 turtle.mainloop()
 
