@@ -606,12 +606,14 @@ clg.penup()
 clg.teleport(*TarClyde)
 
 # Modes
-def scatter():
+def scatter(Time:int):
     global TarBlinky, TarInky, TarPinky, TarClyde
     TarBlinky = (315, 135)
     TarInky = (315, -435)
     TarPinky = (-165, 135)
     TarClyde = (-165, -435)
+
+    #turtle.ontimer()
 
 def chase():
     px, py = (p.xcor(), p.ycor())
