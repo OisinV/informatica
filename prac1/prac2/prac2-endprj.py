@@ -2,7 +2,8 @@ import turtle
 from collections import deque
 import math
 from typing import Any
-from playsound3 import playsound #type:ignore
+from playsound import playsound #type:ignore
+from operator import itemgetter
 
 # Ons spel: Pac-Man
 # De held: Pac-Man
@@ -66,26 +67,32 @@ Highscores: dict[tuple[int, int],tuple[int, str]] = {
     }
 
 # Text
-TurtleText: dict[int,tuple[turtle.Turtle,int,int]]
+TurtleText: dict[int,tuple[turtle.Turtle,int,int]] = {}
 
-def CreateText(ID:int, x:int, y:int, *, text:str, FontName:str="Courier", FontSize:int=8, FontType:str="Bold"):
+def CreateText(ID:int, x:int, y:int, *, text:str, FontName:str="Courier", FontSize:int=80, FontType:str="Bold"):
+    global TurtleText
     t = turtle.Turtle()
     t.penup()
     t.hideturtle()
     t.speed(0)
     t.teleport(x, y)
 
+    t.pendown()
     t.write(text, False, "Left", font=(FontName, FontSize, FontType))
+    t.penup()
 
     TurtleText[ID] = (t, x, y)
 
-def WriteText(ID:int, *, text:str, FontName:str="Courier", FontSize:int=8, FontType:str="Bold"):
+def WriteText(ID:int, *, text:str, colour:str='white', FontName:str="Courier", FontSize:int=8, FontType:str="Bold"):
     t = TurtleText[ID][0]
     x = TurtleText[ID][1]
     y = TurtleText[ID][2]
 
     t.teleport(x, y)
+    t.pendown()
+    t.color(colour)
     t.write(text, False, "Left", font=(FontName, FontSize, FontType))
+    t.penup()
 
 # X, Y Distance Calculator
 def Distance_Calculator(x1:int|float, y1:int|float, x2:int|float, y2:int|float):
@@ -833,122 +840,148 @@ def WalkLoop():
 def DebugPost():
     print(str(p.xcor()) + ', ' + str(p.ycor()))
 
-match gamestate:
-    case 0: # Press any key (not so any)
-        keys = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c,', 'v', 'b', 'n', 'm', 'space']
+CreateText(0, -90, -30, text='')
 
-        def GameStateNext():
-            global gamestate
-            gamestate += 1
+def GameStateOn():
+    global gamestate
+    match gamestate:
+        case 0: # Press any key (not so any)
+            WriteText(0, text='Press Any Key To Start...')
 
-        for k in keys:
-            turtle.onkey(GameStateNext, k)
-        turtle.listen()
-    case 1:
-        try:
-            HighscoreKeys = Highscores.keys()
+            def GameStateNext():
+                global gamestate
+                turtle.onkey(None, 'space')
+                gamestate += 1
+                GameStateOn()
 
-            HighscoreSortKey: list[tuple[int, int]] = [0]
-            for hs, id in HighscoreKeys:
-                HighscoreSortKey.append((hs, id))
-            HighscoreSortKey.sort()
+            def debug():
+                print(gamestate)
 
-            HighscoreStr: dict[tuple[int, int],tuple[int, str, str]]
-            for hs, _ in HighscoreSortKey:
-                strhs = str(hs)
-                PrNumber = ['0', '0', '0', '0', '0', '0', '0', '0']
-                for char, i in (strhs, range(len(strhs))):
-                    PrNumber[-i] = char
-                "".join(PrNumber) # STACKOVERFLOW FOR DA WIN - Written while tired by me (O)
-
-
-        except:
-            gamestate = 0
-    case 2:
-        try:
-            # World Map
-            wereld = [
-                '.###################.',
-                '.#oooooooo#oooooooo#.',
-                '.#*##o###o#o###o##*#.',
-                '.#o##o###o#o###o##o#.',
-                '.#ooooooooooooooooo#.',
-                '.#o##o#o#####o#o##o#.',
-                '.#oooo#ooo#ooo#oooo#.',
-                '.####o###.#.###o####.',
-                '....#o#.......#o#....',
-                '.####o#.##d##.#o####.',
-                't....o..#...#..o....t',
-                '.####o#.#####.#o####.',
-                '....#o#.......#o#....',
-                '.####o#.#####.#o####.',
-                '.#oooooooo#oooooooo#.',
-                '.#o##o###o#o###o##o#.',
-                '.#*o#ooooooooooo#o*#.',
-                '.##o#o#o#####o#o#o##.',
-                '.#oooo#ooo#ooo#oooo#.',
-                '.#o######o#o######o#',
-                '.#ooooooooooooooooo#.',
-                '.###################.',
-
-            ]
-
-            # World Map Loader
-            world()
-            DotLoad()
-
-            # Player Character
-            p.penup()
-            p.teleport(45, -315)
-            p.shape('circle')
-            p.color('gold')
-
-            # AIs/Enemies
-            TarBlinky = (315, 135)
-            TarInky = (315, -435)
-            TarPinky = (-165, 135)
-            TarClyde = (-165, -435)
-
-            blg = turtle.Turtle()
-            blg.speed(0)
-            blg.color('red')
-            blg.penup()
-            blg.teleport(75, -135)
-            blg.setheading(90)
-
-            pig = turtle.Turtle()
-            pig.speed(0)
-            pig.color('deeppink')
-            pig.penup()
-            pig.teleport(*TarPinky)
-
-            ing = turtle.Turtle()
-            ing.speed(0)
-            ing.color('cyan')
-            ing.penup()
-            ing.teleport(*TarInky)
-
-            clg = turtle.Turtle()
-            clg.speed(0)
-            clg.color('sandybrown')
-            clg.penup()
-            clg.teleport(*TarClyde)
-
-            InitLoops()
-
-            turtle.onkey(rechts, 'Right')
-            turtle.onkey(links, 'Left')
-            turtle.onkey(omhoog, 'Up')
-            turtle.onkey(omlaag, 'Down')
-            turtle.onkey(DebugPost, 'd')
+            turtle.onkey(GameStateNext, 'space')
             turtle.listen()
-        except:
+        case 1:
+            #try:
+                sel = 0
+                print(Highscores)
+                print(HighscoreKeys := Highscores.keys())
+
+                HighscoreSortKey: list[tuple[int, int]] = [0]
+                for hs, id in HighscoreKeys:
+                    HighscoreSortKey.append((hs, id))
+                print(HighscoreSortKey)
+                sorted(HighscoreSortKey, key=itemgetter(0))
+
+                HighscoreStr: dict[tuple[int, int],tuple[int, str, str]]
+                for hs, _ in HighscoreSortKey:
+                    PrNumber = str(hs).zfill(8)
+
+                # Complete this code
+                def ActionEvent():
+                    global gamestate
+                    turtle.onkey(None, 'z')
+                    gamestate = 2
+                    GameStateOn()
+
+                turtle.onkey(ActionEvent, 'z')
+                turtle.listen()
+#            except Exception as e:
+#                print(f'Gamestate 1 Crashed and returned to state 0\nException: {e}')
+#                gamestate = 0
+        case 2:
+            try:
+                # World Map
+                wereld = [
+                    '.###################.',
+                    '.#oooooooo#oooooooo#.',
+                    '.#*##o###o#o###o##*#.',
+                    '.#o##o###o#o###o##o#.',
+                    '.#ooooooooooooooooo#.',
+                    '.#o##o#o#####o#o##o#.',
+                    '.#oooo#ooo#ooo#oooo#.',
+                    '.####o###.#.###o####.',
+                    '....#o#.......#o#....',
+                    '.####o#.##d##.#o####.',
+                    't....o..#...#..o....t',
+                    '.####o#.#####.#o####.',
+                    '....#o#.......#o#....',
+                    '.####o#.#####.#o####.',
+                    '.#oooooooo#oooooooo#.',
+                    '.#o##o###o#o###o##o#.',
+                    '.#*o#ooooooooooo#o*#.',
+                    '.##o#o#o#####o#o#o##.',
+                    '.#oooo#ooo#ooo#oooo#.',
+                    '.#o######o#o######o#',
+                    '.#ooooooooooooooooo#.',
+                    '.###################.',
+
+                ]
+
+                # World Map Loader
+                world()
+                DotLoad()
+
+                # Player Character
+                p.penup()
+                p.teleport(45, -315)
+                p.shape('circle')
+                p.color('gold')
+
+                # AIs/Enemies
+                TarBlinky = (315, 135)
+                TarInky = (315, -435)
+                TarPinky = (-165, 135)
+                TarClyde = (-165, -435)
+
+                blg = turtle.Turtle()
+                blg.speed(0)
+                blg.color('red')
+                blg.penup()
+                blg.teleport(75, -135)
+                blg.setheading(90)
+
+                pig = turtle.Turtle()
+                pig.speed(0)
+                pig.color('deeppink')
+                pig.penup()
+                pig.teleport(*TarPinky)
+
+                ing = turtle.Turtle()
+                ing.speed(0)
+                ing.color('cyan')
+                ing.penup()
+                ing.teleport(*TarInky)
+
+                clg = turtle.Turtle()
+                clg.speed(0)
+                clg.color('sandybrown')
+                clg.penup()
+                clg.teleport(*TarClyde)
+
+                InitLoops()
+
+                turtle.onkey(rechts, 'Right')
+                turtle.onkey(links, 'Left')
+                turtle.onkey(omhoog, 'Up')
+                turtle.onkey(omlaag, 'Down')
+                turtle.onkey(DebugPost, 'd')
+                turtle.listen()
+            except:
+                print(f'Gamestate 2 Crashed and returned to state 0\nException: {e}')
+                gamestate = 0
+        case _:
             gamestate = 0
-    case _:
-        gamestate = 0
+
+GameStateOn()
+
+def debug():
+    print(gamestate)
+
+turtle.onkey(debug, 'd')
+turtle.listen()
 
 # Mainsyloopsy
 turtle.mainloop()
+#playsound('01-start-game.mp3') 
 
 # Ghost Note:
 # If they don't turn for collision, then force them to move by turning 90 right or left, DO NOT GO BACKWARD!
