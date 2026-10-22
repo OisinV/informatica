@@ -4,6 +4,7 @@ import math
 from typing import Any
 from playsound import playsound #type:ignore
 from operator import itemgetter
+import random
 
 # Ons spel: Pac-Man
 # De held: Pac-Man
@@ -411,6 +412,31 @@ def TeleporterCreator(x:int|float, y:int|float):
         ObjData[Teleporter1ID]['Linked'] = ObjID
         Teleporter1ID = None
 
+wereld = [
+    '.###################.',
+    '.#oooooooo#oooooooo#.',
+    '.#*##o###o#o###o##*#.',
+    '.#o##o###o#o###o##o#.',
+    '.#ooooooooooooooooo#.',
+    '.#o##o#o#####o#o##o#.',
+    '.#oooo#ooo#ooo#oooo#.',
+    '.####o###.#.###o####.',
+    '....#o#.......#o#....',
+    '.####o#.##d##.#o####.',
+    't....o..#...#..o....t',
+    '.####o#.#####.#o####.',
+    '....#o#.......#o#....',
+    '.####o#.#####.#o####.',
+    '.#oooooooo#oooooooo#.',
+    '.#o##o###o#o###o##o#.',
+    '.#*o#ooooooooooo#o*#.',
+    '.##o#o#o#####o#o#o##.',
+    '.#oooo#ooo#ooo#oooo#.',
+    '.#o######o#o######o#',
+    '.#ooooooooooooooooo#.',
+    '.###################.',
+]
+
 def world(colour:str='blue'):
     r.color(colour)
     y = begin_y
@@ -525,14 +551,14 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
             break
 
         # Remove opposite direction
-        TempDirections = directions
+        TempDirections = directions.copy()
         Parentof = parent[*current]
         if Parentof != None:
             RotationPar = Parentof[0]
         else:
             RotationPar = StartHeadto
 
-        RotationElim = (RotationPar+180)%360
+        RotationElim = (round((RotationPar+180)%360))
         TempDirections.pop(RotationElim)
 
         for rotation in TempDirections:
@@ -578,6 +604,8 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
     step: tuple[int, int] = Goal
 
     while True:
+        print(step)
+        print(parent.keys)
         previous = parent[step]
 
         if previous == None:
@@ -586,7 +614,7 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
         if (previous[0], previous[1]) == Start:
             break
 
-        step = (previous[0], previous[1])
+        step = previous
 
     heading = previous[2]
 
@@ -695,10 +723,47 @@ def BlinkyMove():
         TarBlinky = (p.xcor(), p.ycor())
     elif BlinkyMode == 'eaten':
         TarBlinky = (60, -180)
+    elif BlinkyMode == 'freight':
+        TarBlinky = (p.xcor(), p.ycor())
+        TurnBlink = random.randint(-1, 1)
+        blg.right(90*TurnBlink)
+        blg.forward(30)
     else:
         raise RuntimeError(f"Unknown mode: '{BlinkyMode}' !")
 
-    bfs(*TarBlinky, blg.heading(), p.xcor(), p.ycor())
+    bfs(blg.xcor(), blg.ycor(), blg.heading(), *TarBlinky)
+
+# Pinky
+PinkyMode = 'scatter'
+def PinkyModeChange(Mode:str):
+    global PinkyMode
+    if Mode in ['scatter', 'chase', 'freight', 'eaten']:
+        blg.right(180)
+        PinkyMode = Mode
+    else:
+        raise ValueError(f"'{Mode}' is not scatter, chase, freight or eaten!")
+
+def PinkyMove():
+    if PinkyMode == 'scatter':
+        TarPinky = (-165, 135)
+    elif PinkyMode == 'chase':
+        if int(round(p.heading())) == 90:
+            Pink = Destination_Calculator(*pcor, 90, 120)
+            Pinky = Destination_Calculator(*Pink, 180, 120)
+        else:
+            Pinky = Destination_Calculator(*pcor, p.heading(), 120)
+        TarPinky = Pinky
+    elif PinkyMode == 'eaten':
+        TarPinky = (60, -180)
+    elif PinkyMode == 'freight':
+        TarPinky = (p.xcor(), p.ycor())
+        TurnPink = random.randint(-1, 1)
+        pig.right(90*TurnBlink)
+        pig.forward(30)
+    else:
+        raise RuntimeError(f"Unknown mode: '{BlinkyMode}' !")
+
+    bfs(*TarPinky, blg.heading(), p.xcor(), p.ycor())
 
 def rechts():
     p.setheading(0)
@@ -741,6 +806,7 @@ LevelTimeElapsed = 0
 def InitLoops():
     WalkLoop()
     TickLoop()
+    BlinkyLoop()
 
 def TickLoop():
     p_cor = (p.xcor(), p.ycor())
@@ -768,6 +834,22 @@ def TickLoop():
     LevelTimeElapsed += 1
     # blinky, inky, pinky, clyde not yet finished (each their own loop)
     turtle.ontimer(TickLoop, 500)
+
+# Ghost speed: 50% level 1, 60% de rest als in freight
+# Ghost speed tunnel: 40% tot 50%
+# Eaten Speed: 200%
+
+def BlinkyLoop():
+    t = -5
+
+    BlinkyMove()
+
+    t -= max(20 - 5 * level, 0)
+
+    time = int(round(142 / (1-t*0.01)))
+
+    turtle.ontimer(WalkLoop, time)
+    pass
 
 LevelDotSlowdown = 11.25
 LevelFreightSpeedUp = 12.5
@@ -831,7 +913,7 @@ def WalkLoop():
     if debug:
         print(p.xcor(), p.ycor())
 
-    max(20 - 5 * level, 0)
+    t += max(20 - 5 * level, 0)
 
     time = int(round(142 / (1-t*0.01)))
 
@@ -841,6 +923,37 @@ def DebugPost():
     print(str(p.xcor()) + ', ' + str(p.ycor()))
 
 CreateText(0, -90, -30, text='')
+
+# AIs/Enemies
+TarBlinky = (315, 135)
+TarInky = (315, -435)
+TarPinky = (-165, 135)
+TarClyde = (-165, -435)
+
+blg = turtle.Turtle()
+blg.speed(0)
+blg.color('red')
+blg.penup()
+blg.teleport(75, -135)
+blg.setheading(90)
+
+pig = turtle.Turtle()
+pig.speed(0)
+pig.color('deeppink')
+pig.penup()
+pig.teleport(*TarPinky)
+
+ing = turtle.Turtle()
+ing.speed(0)
+ing.color('cyan')
+ing.penup()
+ing.teleport(*TarInky)
+
+clg = turtle.Turtle()
+clg.speed(0)
+clg.color('sandybrown')
+clg.penup()
+clg.teleport(*TarClyde)
 
 def GameStateOn():
     global gamestate
@@ -860,19 +973,16 @@ def GameStateOn():
             turtle.onkey(GameStateNext, 'space')
             turtle.listen()
         case 1:
-            #try:
+            try:
                 sel = 0
                 print(Highscores)
                 print(HighscoreKeys := Highscores.keys())
 
-                HighscoreSortKey: list[tuple[int, int]] = [0]
-                for hs, id in HighscoreKeys:
-                    HighscoreSortKey.append((hs, id))
-                print(HighscoreSortKey)
-                sorted(HighscoreSortKey, key=itemgetter(0))
+                print(HighscoreKeys)
+                sorted(HighscoreKeys, key=itemgetter(0))
 
                 HighscoreStr: dict[tuple[int, int],tuple[int, str, str]]
-                for hs, _ in HighscoreSortKey:
+                for hs, _ in HighscoreKeys:
                     PrNumber = str(hs).zfill(8)
 
                 # Complete this code
@@ -884,38 +994,11 @@ def GameStateOn():
 
                 turtle.onkey(ActionEvent, 'z')
                 turtle.listen()
-#            except Exception as e:
-#                print(f'Gamestate 1 Crashed and returned to state 0\nException: {e}')
-#                gamestate = 0
+            except Exception as e:
+                print(f'Gamestate 1 Crashed and returned to state 0\nException: {e}')
+                gamestate = 0
         case 2:
-            try:
-                # World Map
-                wereld = [
-                    '.###################.',
-                    '.#oooooooo#oooooooo#.',
-                    '.#*##o###o#o###o##*#.',
-                    '.#o##o###o#o###o##o#.',
-                    '.#ooooooooooooooooo#.',
-                    '.#o##o#o#####o#o##o#.',
-                    '.#oooo#ooo#ooo#oooo#.',
-                    '.####o###.#.###o####.',
-                    '....#o#.......#o#....',
-                    '.####o#.##d##.#o####.',
-                    't....o..#...#..o....t',
-                    '.####o#.#####.#o####.',
-                    '....#o#.......#o#....',
-                    '.####o#.#####.#o####.',
-                    '.#oooooooo#oooooooo#.',
-                    '.#o##o###o#o###o##o#.',
-                    '.#*o#ooooooooooo#o*#.',
-                    '.##o#o#o#####o#o#o##.',
-                    '.#oooo#ooo#ooo#oooo#.',
-                    '.#o######o#o######o#',
-                    '.#ooooooooooooooooo#.',
-                    '.###################.',
-
-                ]
-
+            #try:
                 # World Map Loader
                 world()
                 DotLoad()
@@ -926,37 +1009,6 @@ def GameStateOn():
                 p.shape('circle')
                 p.color('gold')
 
-                # AIs/Enemies
-                TarBlinky = (315, 135)
-                TarInky = (315, -435)
-                TarPinky = (-165, 135)
-                TarClyde = (-165, -435)
-
-                blg = turtle.Turtle()
-                blg.speed(0)
-                blg.color('red')
-                blg.penup()
-                blg.teleport(75, -135)
-                blg.setheading(90)
-
-                pig = turtle.Turtle()
-                pig.speed(0)
-                pig.color('deeppink')
-                pig.penup()
-                pig.teleport(*TarPinky)
-
-                ing = turtle.Turtle()
-                ing.speed(0)
-                ing.color('cyan')
-                ing.penup()
-                ing.teleport(*TarInky)
-
-                clg = turtle.Turtle()
-                clg.speed(0)
-                clg.color('sandybrown')
-                clg.penup()
-                clg.teleport(*TarClyde)
-
                 InitLoops()
 
                 turtle.onkey(rechts, 'Right')
@@ -965,9 +1017,9 @@ def GameStateOn():
                 turtle.onkey(omlaag, 'Down')
                 turtle.onkey(DebugPost, 'd')
                 turtle.listen()
-            except:
-                print(f'Gamestate 2 Crashed and returned to state 0\nException: {e}')
-                gamestate = 0
+            #except Exception as e:
+            #    print(f'Gamestate 2 Crashed and returned to state 0\nException: {e}')
+            #    gamestate = 0
         case _:
             gamestate = 0
 
