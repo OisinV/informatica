@@ -788,16 +788,15 @@ def ModeSwitch():
 BlinkyMode = 'scatter'
 def BlinkyModeChange(eaten:bool=False):
     global BlinkyMode
-    if BlinkyMode != MainAIMode:
-        if freight:
-            blg.right(180)
-            BlinkyMode = 'scatter'
-        elif eaten:
-            blg.right(180)
-            BlinkyMode = 'eaten'
-        else:
-            blg.right(180)
-            BlinkyMode = MainAIMode
+    if freight:
+        blg.right(180)
+        BlinkyMode = 'freight'
+    elif eaten:
+        blg.right(180)
+        BlinkyMode = 'eaten'
+    elif BlinkyMode != MainAIMode:
+        blg.right(180)
+        BlinkyMode = MainAIMode
 
 def BlinkyMove():
     LevelDotAngry = 20
@@ -1391,6 +1390,7 @@ turtle.listen()
 
 # Mainsyloopsy
 turtle.mainloop()
+
 #playsound('01-start-game.mp3') 
 
 # Ghost Note:
