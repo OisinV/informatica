@@ -775,16 +775,20 @@ def ModeSwitch():
         sum(LevelTimingList[:8])
     ]
 
-    for Timer in range(0, 7, 2):
-        turtle.ontimer(scatter, TimerList[Timer])
-        turtle.ontimer(chase, TimerList[Timer])
+    turtle.ontimer(scatter, TimerList[0])
+    turtle.ontimer(chase, TimerList[1])
+    turtle.ontimer(scatter, TimerList[2])
+    turtle.ontimer(chase, TimerList[3])
+    turtle.ontimer(scatter, TimerList[4])
+    turtle.ontimer(chase, TimerList[5])
+    turtle.ontimer(scatter, TimerList[6])
+    turtle.ontimer(chase, TimerList[7])
 
 # Blinky
 BlinkyMode = 'scatter'
-BlinkyOldMode = 'scatter'
 def BlinkyModeChange(eaten:bool=False):
     global BlinkyMode
-    if BlinkyMode != BlinkyOldMode:
+    if BlinkyMode != MainAIMode:
         if freight:
             blg.right(180)
             BlinkyMode = 'scatter'
@@ -838,10 +842,9 @@ def BlinkyMove():
 
 # Pinky
 PinkyMode = 'scatter'
-PinkyOldMode = 'scatter'
 def PinkyModeChange(eaten:bool = False):
     global PinkyMode
-    if PinkyMode != PinkyOldMode:
+    if PinkyMode != MainAIMode:
         if freight:
             pig.right(180)
             PinkyMode = 'scatter'
@@ -1253,25 +1256,28 @@ blg.speed(0)
 blg.color('red')
 blg.penup()
 blg.teleport(75, -135)
-blg.setheading(90)
+blg.setheading(270)
 
 pig = turtle.Turtle()
 pig.speed(0)
 pig.color('deeppink')
 pig.penup()
-pig.teleport(*TarPinky)
+pig.teleport(75, -135)
+pig.setheading(270)
 
 ing = turtle.Turtle()
 ing.speed(0)
 ing.color('cyan')
 ing.penup()
-ing.teleport(*TarInky)
+ing.teleport(75, -135)
+ing.setheading(270)
 
 clg = turtle.Turtle()
 clg.speed(0)
 clg.color('sandybrown')
 clg.penup()
-clg.teleport(*TarClyde)
+clg.teleport(75, -135)
+clg.setheading(270)
 
 def GameStateOn():
     global gamestate
