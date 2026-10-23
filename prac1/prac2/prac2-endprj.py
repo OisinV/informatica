@@ -5,6 +5,7 @@ from typing import Any
 from playsound import playsound #type:ignore
 from operator import itemgetter
 import random
+import sys
 
 # Ons spel: Pac-Man
 # De held: Pac-Man
@@ -47,6 +48,9 @@ WorldSmallestX = -240
 WorldBiggestY = 180
 WorldSmallestY = -660
 
+r.teleport(WorldBiggestX, WorldBiggestY)
+r.teleport(WorldSmallestX, WorldSmallestY)
+
 turtle.setworldcoordinates(WorldSmallestX, WorldSmallestY, WorldBiggestX, WorldBiggestY)
 
 level = 0
@@ -86,7 +90,7 @@ def CreateText(ID:int, x:int, y:int):
 
     TurtleText[ID] = (t, x, y)
 
-def WriteText(ID:int, *, text:str, TextAllign: str="Left", colour:str='white', FontName:str="Courier", FontSize:int=8, FontType:str="Bold"):
+def WriteText(ID:int, *, text:str, TextAllign: str="Left", colour:str='white', FontName:str="Courier", FontSize:int=64, FontType:str="Bold"):
     t = TurtleText[ID][0]
     x = TurtleText[ID][1]
     y = TurtleText[ID][2]
@@ -528,7 +532,7 @@ def SpecialLoad():
         x = begin_x
         for teken in rij:
             if teken == 't':
-                Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=4)
+                Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=4)
             x = x + 30
         y = y - 30
 
@@ -994,7 +998,12 @@ def teleportertp(ObjID:int, TargetTurtle:turtle.Turtle):
 
 # Game Over
 def GameOver():
+    def TextWhipe():
+        ClearText(1)
+
     WriteText(1, text='You Died!', colour='red', TextAllign='center')
+
+    turtle.ontimer(TextWhipe, 3000)
 
     turtle.onkey(None, 'Right') # type:ignore
     turtle.onkey(None, 'Left') # type:ignore
@@ -1047,7 +1056,7 @@ def TickLoop():
             Points += 200 * (2 ** EatenStreakFreight)
             EatenStreakFreight += 1
             PinkyModeChange(True)
-        if not BlinkyMode in ['freight', 'eaten']:
+        if not PinkyMode in ['freight', 'eaten']:
             GameOver()
 
     ing_to_p_dis = ing.distance(*p_cor)
@@ -1056,7 +1065,7 @@ def TickLoop():
             Points += 200 * (2 ** EatenStreakFreight)
             EatenStreakFreight += 1
             InkyModeChange(True)
-        if not BlinkyMode in ['freight', 'eaten']:
+        if not InkyMode in ['freight', 'eaten']:
             GameOver()
 
     ClydeMode = 'scatter' #temp
@@ -1066,7 +1075,7 @@ def TickLoop():
             Points += 200 * (2 ** EatenStreakFreight)
             EatenStreakFreight += 1
             ClydeModeChange(True)
-        if not BlinkyMode in ['freight', 'eaten']:
+        if not ClydeMode in ['freight', 'eaten']:
             GameOver()
             
     if Dots == 0:
@@ -1211,7 +1220,15 @@ def WalkLoop():
 
         if TypeID == 3:
             print('trig 3')
-            Remove_Collision_Object(p.xcor()+round(GridStepSize/2), p.ycor()+round(GridStepSize/2), coordinates=(p.xcor()+30, p.ycor()+30), TypeID=3)
+            Remove_Collision_Object(
+                p.xcor()-round(GridStepSize/2),
+                p.ycor()-round(GridStepSize/2),
+                coordinates=(
+                    p.xcor()-round(GridStepSize/2)+30,
+                    p.ycor()-round(GridStepSize/2)+30
+                ),
+                TypeID=3
+            )
             Dots -= 1
             Points += 50
             r.teleport(p.xcor()-14, p.ycor()-14)
@@ -1243,6 +1260,9 @@ def DebugPost():
 
 CreateText(0, GridOriginX, -30) # Press any key
 CreateText(1, GridOriginX, 30) # You Died text
+CreateText(2, -60, 150) # Play Game
+CreateText(3, -60, 120) # Options (This cannot be implemented since it uses a json to store values, but it is intended for when I have time)
+CreateText(4, -60, 90) # Exit Game
 
 # AIs/Enemies
 TarBlinky = (315, 135)
@@ -1256,6 +1276,7 @@ blg.color('red')
 blg.penup()
 blg.teleport(75, -135)
 blg.setheading(270)
+blg.ht()
 
 pig = turtle.Turtle()
 pig.speed(0)
@@ -1263,6 +1284,7 @@ pig.color('deeppink')
 pig.penup()
 pig.teleport(75, -135)
 pig.setheading(270)
+pig.ht()
 
 ing = turtle.Turtle()
 ing.speed(0)
@@ -1270,6 +1292,7 @@ ing.color('cyan')
 ing.penup()
 ing.teleport(75, -135)
 ing.setheading(270)
+ing.ht()
 
 clg = turtle.Turtle()
 clg.speed(0)
@@ -1277,12 +1300,51 @@ clg.color('sandybrown')
 clg.penup()
 clg.teleport(75, -135)
 clg.setheading(270)
+clg.ht()
+
+def ClearGhosts():
+    blg.speed(0)
+    blg.color('red')
+    blg.penup()
+    blg.teleport(75, -135)
+    blg.setheading(270)
+    blg.ht()
+
+    pig.speed(0)
+    pig.color('deeppink')
+    pig.penup()
+    pig.teleport(75, -135)
+    pig.setheading(270)
+    pig.ht()
+
+    ing.speed(0)
+    ing.color('cyan')
+    ing.penup()
+    ing.teleport(75, -135)
+    ing.setheading(270)
+    ing.ht()
+
+    clg.speed(0)
+    clg.color('sandybrown')
+    clg.penup()
+    clg.teleport(75, -135)
+    clg.setheading(270)
+    clg.ht()
+
+def ShowGhosts():
+    blg.st()
+    pig.st()
+    ing.st()
+    clg.st()
 
 def GameStateOn():
     global gamestate
     match gamestate:
         case 0: # Press any key (not so any)
-            WriteText(0, text='Press Any Key To Start...', TextAllign='center')
+            ClearGhosts()
+            p.ht()
+
+            WriteText(0, text='Press Space or Z To Start...', TextAllign='center')
 
             def GameStateNext():
                 global gamestate
@@ -1298,9 +1360,20 @@ def GameStateOn():
             #    print(gamestate)
 
             turtle.onkey(GameStateNext, 'space')
+            turtle.onkey(GameStateNext, 'z')
             turtle.listen()
         case 1:
             try:
+                ClearGhosts()
+                WriteText(2, text='Play Game', TextAllign='left')
+                WriteText(3, text='Options (WIP, not designed for website!)', TextAllign='left')
+                WriteText(4, text='Exit', TextAllign='left')
+                
+                p.st()
+                p.shape('classic')
+                p.color('green')
+                p.setheading(0)
+
                 sel = 0
                 print(Highscores)
                 print(HighscoreKeys := Highscores.keys())
@@ -1328,21 +1401,42 @@ def GameStateOn():
                             turtle.onkey(None, 'Down') #type:ignore
                             gamestate = 2
                             GameStateOn()
-                        case 1: # Start Menu
+                        case 1: # Options
                             pass
                         case 2: # quit
-                            pass
+                            sys.exit()
                         case _:
                             sel = 0
                             ActionEvent()
 
+                def Drawer():
+                    nonlocal sel
+                    if sel < 0:
+                        sel = 2
+                    match sel:
+                        case 0:
+                            p.teleport(-90, 150)
+                        case 1:
+                            p.teleport(-90, 120)
+                        case 2:
+                            p.teleport(-90, 90)
+                        case _:
+                            sel = 0
+                            Drawer()
+
                 def MinusSel():
                     nonlocal sel
                     sel -= 1
+                    #print(sel)
+                    Drawer()
 
                 def PlusSel():
                     nonlocal sel
                     sel += 1
+                    #print(sel)
+                    Drawer()
+
+                Drawer()
 
                 turtle.onkey(ActionEvent, 'z')
                 turtle.onkey(ActionEvent, 'Enter')
@@ -1365,6 +1459,7 @@ def GameStateOn():
                 p.color('gold')
 
                 ModeSwitch()
+                ShowGhosts()
 
                 InitLoops()
 
@@ -1377,6 +1472,8 @@ def GameStateOn():
             #except Exception as e:
             #    print(f'Gamestate 2 Crashed and returned to state 0\nException: {e}')
             #    gamestate = 0
+        case 3:
+            # highscore add
         case _:
             gamestate = 0
 
