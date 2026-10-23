@@ -496,11 +496,26 @@ def DotLoad():
         x = begin_x
         for teken in rij:
             if teken == 'o':
-                Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=2)
+                Create_Collision_Object(
+                    x,
+                    y,
+                    coordinates=(
+                        x+30,
+                        y+30
+                    ),
+                    TypeID=2
+                )
                 puntje(x+round(GridStepSize/2), y+round(GridStepSize/2))
                 Dots += 1
             if teken == '*':
-                Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=3)
+                Create_Collision_Object(
+                    x,
+                    y,
+                    coordinates=(
+                        x+30,
+                        y+30
+                    ),
+                    TypeID=3)
                 puntje(x+round(GridStepSize/2), y+round(GridStepSize/2), 14)
                 Dots += 1
             x = x + 30
@@ -509,7 +524,7 @@ def DotLoad():
 def SpecialLoad():
     global Dots
     y = begin_y
-    for rij in wereld:
+    for rij in Special:
         x = begin_x
         for teken in rij:
             if teken == 't':
@@ -766,17 +781,19 @@ def ModeSwitch():
 
 # Blinky
 BlinkyMode = 'scatter'
+BlinkyOldMode = 'scatter'
 def BlinkyModeChange(eaten:bool=False):
     global BlinkyMode
-    if freight:
-        blg.right(180)
-        BlinkyMode = 'scatter'
-    elif eaten:
-        blg.right(180)
-        BlinkyMode = 'eaten'
-    else:
-        blg.right(180)
-        BlinkyMode = MainAIMode
+    if BlinkyMode != BlinkyOldMode:
+        if freight:
+            blg.right(180)
+            BlinkyMode = 'scatter'
+        elif eaten:
+            blg.right(180)
+            BlinkyMode = 'eaten'
+        else:
+            blg.right(180)
+            BlinkyMode = MainAIMode
 
 def BlinkyMove():
     LevelDotAngry = 20
@@ -821,17 +838,19 @@ def BlinkyMove():
 
 # Pinky
 PinkyMode = 'scatter'
+PinkyOldMode = 'scatter'
 def PinkyModeChange(eaten:bool = False):
     global PinkyMode
-    if freight:
-        pig.right(180)
-        PinkyMode = 'scatter'
-    elif eaten:
-        pig.right(180)
-        PinkyMode = 'eaten'
-    else:
-        pig.right(180)
-        PinkyMode = MainAIMode
+    if PinkyMode != PinkyOldMode:
+        if freight:
+            pig.right(180)
+            PinkyMode = 'scatter'
+        elif eaten:
+            pig.right(180)
+            PinkyMode = 'eaten'
+        else:
+            pig.right(180)
+            PinkyMode = MainAIMode
 
 def PinkyMove():
     if PinkyMode == 'scatter':
@@ -845,6 +864,7 @@ def PinkyMove():
             Pinki = Destination_Calculator(p.xcor(), p.ycor(), p.heading(), 120)
             Pinky = (Pinki[0]*2, Pinki[1]*2)
         TarPinky = Pinky
+        print('Tar Went Chase Pinky')
     elif PinkyMode == 'eaten':
         TarPinky = (60, -180)
     elif PinkyMode == 'freight':
@@ -879,60 +899,60 @@ def PinkyMove():
     return
 
 # Pinky
-PinkyMode = 'scatter'
-def PinkyModeChange(eaten:bool = False):
-    global PinkyMode
+InkyMode = 'scatter'
+def InkyModeChange(eaten:bool = False):
+    global InkyMode
     if freight:
-        pig.right(180)
-        PinkyMode = 'scatter'
+        ing.right(180)
+        InkyMode = 'freight'
     elif eaten:
-        pig.right(180)
-        PinkyMode = 'eaten'
+        ing.right(180)
+        InkyMode = 'eaten'
     else:
-        pig.right(180)
-        PinkyMode = MainAIMode
+        ing.right(180)
+        InkyMode = MainAIMode
 
-def PinkyMove():
-    if PinkyMode == 'scatter':
-        TarPinky = (-165, 135)
-    elif PinkyMode == 'chase':
+def InkyMove():
+    if InkyMode == 'scatter':
+        TarInky = (-165, 135)
+    elif InkyMode == 'chase':
         if int(round(p.heading())) == 90:
             Pink: tuple[int, int] = Destination_Calculator(p.xcor(), p.ycor(), 90, 120)
-            Pinky = Destination_Calculator(*Pink, 180, 120)
+            Inky = Destination_Calculator(*Pink, 180, 120)
         else:
-            Pinky = Destination_Calculator(p.xcor(), p.ycor(), p.heading(), 120)
-        TarPinky = Pinky
-    elif PinkyMode == 'eaten':
-        TarPinky = (60, -180)
-    elif PinkyMode == 'freight':
-        TarPinky = (p.xcor(), p.ycor())
+            Inky = Destination_Calculator(p.xcor(), p.ycor(), p.heading(), 120)
+        TarInky = Inky
+    elif InkyMode == 'eaten':
+        TarInky = (60, -180)
+    elif InkyMode == 'freight':
+        TarInky = (p.xcor(), p.ycor())
         TurnPink = random.randint(-1, 1)
-        pig.right(90*TurnPink)
-        pig.forward(30)
+        ing.right(90*TurnPink)
+        ing.forward(30)
     else:
-        raise RuntimeError(f"Unknown mode: '{PinkyMode}' !")
+        raise RuntimeError(f"Unknown mode: '{InkyMode}' !")
 
-    Heading = bfs(pig.xcor(), pig.ycor(), pig.heading(), *TarPinky)
+    Heading = bfs(ing.xcor(), ing.ycor(), ing.heading(), *TarInky)
     if Heading == None:
         return
     if Heading == 'Turn':
-        if Collision_Check(pig.xcor(), pig.ycor(), 90):
-            pig.setheading(90)
-            pig.forward(30)
-        elif Collision_Check(pig.xcor(), pig.ycor(), 180):
-            pig.setheading(180)
-            pig.forward(30)
-        elif Collision_Check(pig.xcor(), pig.ycor(), 270):
-            pig.setheading(270)
-            pig.forward(30)
-        elif Collision_Check(pig.xcor(), pig.ycor(), 0):
-            pig.setheading(0)
-            pig.forward(30)
+        if Collision_Check(ing.xcor(), ing.ycor(), 90):
+            ing.setheading(90)
+            ing.forward(30)
+        elif Collision_Check(ing.xcor(), ing.ycor(), 180):
+            ing.setheading(180)
+            ing.forward(30)
+        elif Collision_Check(ing.xcor(), ing.ycor(), 270):
+            ing.setheading(270)
+            ing.forward(30)
+        elif Collision_Check(ing.xcor(), ing.ycor(), 0):
+            ing.setheading(0)
+            ing.forward(30)
         return
 
-    pig.setheading(Heading)
-    if Collision_Check(pig.xcor(), pig.ycor(), Heading):
-        pig.forward(30)
+    ing.setheading(Heading)
+    if Collision_Check(ing.xcor(), ing.ycor(), Heading):
+        ing.forward(30)
     return
 
 def rechts():
@@ -995,10 +1015,12 @@ def InitLoops():
     Loop = True
     WalkLoop()
     TickLoop()
+
     BlinkyLoop()
+    PinkyLoop()
 
 def TickLoop():
-    print('Main AI Loop: ' + MainAIMode + ', Blinky: ' + BlinkyMode + ', Pinky: ' + PinkyMode)
+    print('Main AI Loop: ' + MainAIMode + ', Blinky: ' + BlinkyMode + ', Pinky: ' + PinkyMode + ' freight: ' + str(freight))
 
     p_cor = (p.xcor(), p.ycor())
     blg_cor = (blg.xcor(), blg.ycor())
@@ -1008,8 +1030,8 @@ def TickLoop():
 
     global level, Dots, LevelTimeElapsed, EatenStreakFreight, Points
 
-    blg_to_p_dis = Distance_Calculator(*blg_cor, *p_cor)
-    if blg_to_p_dis[0] <= 25 and blg_to_p_dis[1] <= 25:
+    blg_to_p_dis = blg.distance(*p_cor)
+    if blg_to_p_dis <= 25:
         if BlinkyMode == 'freight':
             Points += 200 * (2 ** EatenStreakFreight)
             EatenStreakFreight += 1
@@ -1017,8 +1039,8 @@ def TickLoop():
         if not BlinkyMode in ['freight', 'eaten']:
             GameOver()
 
-    pig_to_p_dis = Distance_Calculator(*pig_cor, *p_cor)
-    if pig_to_p_dis[0] <= 25 and pig_to_p_dis[1] <= 25:
+    pig_to_p_dis = pig.distance(*p_cor)
+    if pig_to_p_dis <= 25:
         if PinkyMode == 'freight':
             Points += 200 * (2 ** EatenStreakFreight)
             EatenStreakFreight += 1
@@ -1026,9 +1048,8 @@ def TickLoop():
         if not BlinkyMode in ['freight', 'eaten']:
             GameOver()
 
-    InkyMode = 'scatter' #temp
-    ing_to_p_dis = Distance_Calculator(*ing_cor, *p_cor)
-    if ing_to_p_dis[0] <= 25 and ing_to_p_dis[1] <= 25:
+    ing_to_p_dis = ing.distance(*p_cor)
+    if ing_to_p_dis <= 25:
         if InkyMode == 'freight':
             Points += 200 * (2 ** EatenStreakFreight)
             EatenStreakFreight += 1
@@ -1037,8 +1058,8 @@ def TickLoop():
             GameOver()
 
     ClydeMode = 'scatter' #temp
-    clg_to_p_dis = Distance_Calculator(*clg_cor, *p_cor)
-    if clg_to_p_dis[0] <= 25 and clg_to_p_dis[1] <= 25:
+    clg_to_p_dis = ing.distance(*p_cor)
+    if clg_to_p_dis <= 25:
         if ClydeMode == 'freight':
             Points += 200 * (2 ** EatenStreakFreight)
             EatenStreakFreight += 1
@@ -1064,6 +1085,7 @@ def TickLoop():
 def BlinkyLoop():
     t = -5
 
+    BlinkyModeChange()
     BlinkyMove()
 
     Tuppd = Collision_Coord_Check(blg.xcor(), blg.ycor(), lbObjID=True)
@@ -1093,6 +1115,42 @@ def BlinkyLoop():
 
     if Loop:
         turtle.ontimer(BlinkyLoop, time)
+    else:
+        return
+
+def PinkyLoop():
+    t = -5
+
+    PinkyModeChange()
+    PinkyMove()
+
+    Tuppd = Collision_Coord_Check(pig.xcor(), pig.ycor(), lbObjID=True)
+    if isinstance(Tuppd, tuple):
+        Tupped:tuple[int|None, int|None] = Tuppd
+        TypeID = Tupped[0]
+        ObjID = Tupped[1]
+    else:
+        TypeID = -100
+        ObjID = -10000
+        raise RuntimeError("How?")
+
+    if ObjID != None and TypeID != None:
+        if TypeID == 0:
+            pig.teleport(begin_x+75, begin_y-15)
+            print('Out of Bounds')
+
+        if TypeID == 1:
+            teleportertp(ObjID, pig)
+
+        if TypeID == 4:
+            t -= 60
+
+    t -= max(20 - 5 * level, 0)
+
+    print('Pinky: ' + str(time := int(round(142 / (1+(t*0.01))))))
+
+    if Loop:
+        turtle.ontimer(PinkyLoop, time)
     else:
         return
 
@@ -1131,7 +1189,15 @@ def WalkLoop():
 
         if TypeID == 2:
             print('trig 2')
-            Remove_Collision_Object(p.xcor()+round(GridStepSize/2), p.ycor()+round(GridStepSize/2), coordinates=(p.xcor()+30, p.ycor()+30), TypeID=2)
+            Remove_Collision_Object(
+                p.xcor()-round(GridStepSize/2),
+                p.ycor()-round(GridStepSize/2),
+                coordinates=(
+                    p.xcor()-round(GridStepSize/2)+30,
+                    p.ycor()-round(GridStepSize/2)+30
+                ),
+                TypeID=2
+            )
             Dots -= 1
             Points += 10
             r.teleport(p.xcor()-14, p.ycor()-14)
@@ -1153,7 +1219,7 @@ def WalkLoop():
             r.pendown()
             t -= LevelDotSlowdown
             FreightMode()
-        #print(Dots)
+        print(Dots)
 
     if freight:
         t += LevelFreightSpeedUp
