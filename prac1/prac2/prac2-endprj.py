@@ -22,6 +22,7 @@ import sys
 # 4 (Special Case) = tunnel (ghost slowdown)
 # 5 (Special Case) = intersection (Ghost asks which way to turn)
 # 6 (Special Case) = House (ghost turns off eaten and asks which way to turn)
+# 7 = Empty Spot
 
 p = turtle.Turtle()
 r = turtle.Turtle()
@@ -97,6 +98,8 @@ def WriteText(ID:int, *, text:str, TextAllign: str="Left", colour:str='white', F
         t = TurtleText[ID][0]
         x = TurtleText[ID][1]
         y = TurtleText[ID][2]
+
+        ClearText(ID)
 
         t.teleport(x, y)
         t.pendown()
@@ -184,8 +187,9 @@ def Collision_Coord_Check(
 
     if not returnable:
         if lbObjID:
-            returnable = [0, -1]
-        returnable = [0]
+            returnable = [(0, -1)]
+        else:
+            returnable = [0]
 
     return returnable #type:ignore
 
@@ -501,6 +505,8 @@ def world(colour:str='blue'):
                 muur(x, y)
             if teken == 't':
                 TeleporterCreator(x, y)
+            if teken == '.':
+                Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=7)
             x = x + 30
         y = y - 30
 
@@ -693,33 +699,32 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
 
             # Collision check
             NextCoordColl = Collision_Coord_Check(nx, ny)
-            for coll in NextCoordColl:
-                if coll in CollisionIDs:
-                    continue
+            if any(coll in CollisionIDs for coll in NextCoordColl):
+                continue
 
             # Check if the next block is a portal and then change coords to destination of portal
-            for coll in NextCoordColl:
-                if coll == 1:
-                    des: tuple[int, int]|None = TeleporterDesti(*nxt) #type:ignore
-                    if des != None:
-                        ReverseRotation = (rotation+180)%360
-                        tdx, tdy = directions[ReverseRotation]
-                        xdes = des[0] + tdx
-                        ydes = des[1] + tdy
-                        CorrDes = (xdes, ydes)
+            if any(coll == 1 for coll in NextCoordColl):
+                des: tuple[int, int]|None = TeleporterDesti(*nxt) #type:ignore
+                if des != None:
+                    ReverseRotation = (rotation+180)%360
+                    tdx, tdy = directions[ReverseRotation]
+                    xdes = des[0] + tdx
+                    ydes = des[1] + tdy
+                    CorrDes = (xdes, ydes)
 
-                        if CorrDes in parent:
-                            continue
+                    if CorrDes in parent:
+                        continue
 
-                        if Collision_Coord_Check(*CorrDes) in CollisionIDs: #type:ignore
-                            continue
+                    DesCoordColl = Collision_Coord_Check(*CorrDes)
+                    if any(coll in CollisionIDs for coll in DesCoordColl):
+                        continue
 
-                        parent[CorrDes] = (ReverseRotation, *current)
-                        qeue.append(CorrDes)
+                    parent[CorrDes] = (ReverseRotation, *current)
+                    qeue.append(CorrDes)
 
-                else:
-                    parent[nxt[0], nxt[1]] = (rotation, *current)
-                    qeue.append((nxt[0], nxt[1]))
+            else:
+                parent[nxt[0], nxt[1]] = (rotation, *current)
+                qeue.append((nxt[0], nxt[1]))
 
     if Goal not in parent:
         return
@@ -1154,14 +1159,14 @@ def BlinkyLoop():
             elif FTypeID not in CollisionIDs:
                 blg.forward(30)
 
-            t -= max(20 - 5 * level, 0)
+    t -= max(20 - 5 * level, 0)
 
-            time = int(round(142 / (1+(t*0.01))))
+    time = int(round(142 / (1+(t*0.01))))
 
-            if Loop:
-                turtle.ontimer(BlinkyLoop, time)
-            else:
-                return
+    if Loop:
+        turtle.ontimer(BlinkyLoop, time)
+    else:
+        return
 
 def PinkyLoop():
     t = -5
@@ -1178,7 +1183,7 @@ def PinkyLoop():
 
         elif TypeIDl == 1:
             if ObjIDl != None:
-                teleportertp(ObjIDl, blg) #type:ignore
+                teleportertp(ObjIDl, pig) #type:ignore
 
         elif TypeIDl == 4:
             t -= 60
@@ -1202,14 +1207,14 @@ def PinkyLoop():
             elif FTypeID not in CollisionIDs:
                 pig.forward(30)
     
-            t -= max(20 - 5 * level, 0)
+    t -= max(20 - 5 * level, 0)
     
-            time = int(round(142 / (1+(t*0.01))))
+    time = int(round(142 / (1+(t*0.01))))
     
-            if Loop:
-                turtle.ontimer(PinkyLoop, time)
-            else:
-                return
+    if Loop:
+        turtle.ontimer(PinkyLoop, time)
+    else:
+        return
 
 def InkyLoop():
     t = -5
@@ -1226,7 +1231,7 @@ def InkyLoop():
 
         elif TypeIDl == 1:
             if ObjIDl != None:
-                teleportertp(ObjIDl, blg) #type:ignore
+                teleportertp(ObjIDl, ing) #type:ignore
 
         elif TypeIDl == 4:
             t -= 60
@@ -1251,14 +1256,14 @@ def InkyLoop():
             elif FTypeID not in CollisionIDs:
                 ing.forward(30)
     
-            t -= max(20 - 5 * level, 0)
+    t -= max(20 - 5 * level, 0)
     
-            time = int(round(142 / (1+(t*0.01))))
+    time = int(round(142 / (1+(t*0.01))))
     
-            if Loop:
-                turtle.ontimer(InkyLoop, time)
-            else:
-                return
+    if Loop:
+        turtle.ontimer(InkyLoop, time)
+    else:
+        return
 
 def ClydeLoop():
     t = -5
@@ -1266,7 +1271,7 @@ def ClydeLoop():
     ClydeModeChange()
 
 
-    Tuppd = Collision_Coord_Check(clg.xcor(), p.ycor(), lbObjID=True)
+    Tuppd = Collision_Coord_Check(clg.xcor(), clg.ycor(), lbObjID=True)
 
     for TypeIDl, ObjIDl in Tuppd: #type:ignore
         if TypeIDl == 0:
@@ -1275,7 +1280,7 @@ def ClydeLoop():
 
         elif TypeIDl == 1:
             if ObjIDl != None:
-                teleportertp(ObjIDl, blg) #type:ignore
+                teleportertp(ObjIDl, clg) #type:ignore
 
         elif TypeIDl == 4:
             t -= 60
@@ -1299,14 +1304,14 @@ def ClydeLoop():
             elif FTypeID not in CollisionIDs:
                 clg.forward(30)
     
-            t -= max(20 - 5 * level, 0)
+    t -= max(20 - 5 * level, 0)
     
-            time = int(round(142 / (1+(t*0.01))))
+    time = int(round(142 / (1+(t*0.01))))
     
-            if Loop:
-                turtle.ontimer(ClydeLoop, time)
-            else:
-                return
+    if Loop:
+        turtle.ontimer(ClydeLoop, time)
+    else:
+        return
 
 LevelDotSlowdown = 11.25
 LevelFreightSpeedUp = 12.5
@@ -1445,13 +1450,14 @@ CreateText(4, -60, 90) # Exit Game
 for i in range(6): # creates 5 highscore texts and a header with highscore as text
     CreateText(i+5, -60, 30-30*i)
 CreateText(11, 450, 180)
-CreateText(12, GridOriginX, 0) # Highscore input and other highscore text thing stuff (totally written while tired! Nothing else (pinky promise NOT!))
+CreateText(12, 450, 0)
+CreateText(13, GridOriginX, -30) # Highscore input and other highscore text thing stuff (totally written while tired! Nothing else (pinky promise NOT!))
 
 # AIs/Enemies
 ScatterTarBlinky = (315, 135)
 ScatterTarInky = (315, -435)
 ScatterTarPinky = (-165, 135)
-ScatterTarClyde = (-165, -435)
+ScatterTarClyde = (-165, -445)
 
 blg = turtle.Turtle()
 blg.speed(0)
@@ -1490,28 +1496,28 @@ def ClearGhosts():
     blg.color('red')
     blg.penup()
     blg.teleport(75, -135)
-    blg.setheading(270)
+    blg.setheading(90)
     blg.ht()
 
     pig.speed(0)
     pig.color('deeppink')
     pig.penup()
     pig.teleport(75, -135)
-    pig.setheading(270)
+    pig.setheading(90)
     pig.ht()
 
     ing.speed(0)
     ing.color('cyan')
     ing.penup()
     ing.teleport(75, -135)
-    ing.setheading(270)
+    ing.setheading(90)
     ing.ht()
 
     clg.speed(0)
     clg.color('sandybrown')
     clg.penup()
     clg.teleport(75, -135)
-    clg.setheading(270)
+    clg.setheading(90)
     clg.ht()
 
 def ShowGhosts():
@@ -1525,6 +1531,8 @@ def GameStateOn():
     match gamestate:
         case 0: # Press any key (not so any)
             for i in range(15):
+                if i == 1:
+                    continue
                 ClearText(i)
             ClearGhosts()
             p.ht()
@@ -1536,6 +1544,8 @@ def GameStateOn():
                 turtle.onkey(None, 'space') #type:ignore
 
                 for i in range(15):
+                    if i == 1:
+                        continue
                     ClearText(i)
 
                 gamestate += 1
@@ -1550,6 +1560,8 @@ def GameStateOn():
         case 1:
             try:
                 for i in range(15):
+                    if i == 1:
+                        continue
                     ClearText(i)
                 ClearGhosts()
                 WriteText(2, text='Play Game', TextAllign='left')
@@ -1589,6 +1601,8 @@ def GameStateOn():
                             turtle.onkey(None, 'Up') #type:ignore
                             turtle.onkey(None, 'Down') #type:ignore
                             for i in range(15):
+                                if i == 1:
+                                    continue
                                 ClearText(i)
                             gamestate = 2
                             GameStateOn()
@@ -1642,6 +1656,8 @@ def GameStateOn():
             global collision
             collision = {}
             for i in range(15):
+                if i == 1:
+                    continue
                 ClearText(i)
             #try:
             # World Map Loader
@@ -1670,10 +1686,17 @@ def GameStateOn():
             #    gamestate = 0
         case 3:
             for i in range(15):
+                if i == 1:
+                    continue
                 ClearText(i)
-            WriteText(12, text=f'Highscore: {Points}, Level: {level+1}, Name: ...')
+
             Name = ['.', '.', '.']
             EditIndex = 0
+
+            JoinedName = "".join(Name)
+            print(f'Highscore: {Points}, Level: {level+1}, Name: {JoinedName}')
+
+            WriteText(13, text=f'Highscore: {Points}, Level: {level+1}, Name: {JoinedName}', TextAllign='center', FontSize=128)
 
             def NextGameState():
                 for key in 'qwertyuiopasdfghjklzxcvbnm':
@@ -1690,6 +1713,11 @@ def GameStateOn():
                 nonlocal Name, EditIndex
                 Name[EditIndex] = key
                 EditIndex += 1
+
+                JoinedName = ("".join(Name)).upper()
+
+                WriteText(13, text=f'Highscore: {Points}, Level: {level+1}, Name: {JoinedName}', TextAllign='center', FontSize=128)
+                
                 if EditIndex == 3:
                     NextGameState()
 
@@ -1705,6 +1733,7 @@ def GameStateOn():
 GameStateOn()
 
 def debug():
+    print()
     print(gamestate)
 
 turtle.onkey(debug, 'd')
