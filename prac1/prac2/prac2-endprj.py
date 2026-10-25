@@ -550,8 +550,8 @@ def SpecialLoad():
         for teken in rij:
             if teken == 't':
                 Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=4)
-            if teken == 'i':
-                Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=5)
+            #if teken == 'i':
+            #    Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=5)
             if teken == 'h':
                 Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=6)
             x = x + 30
@@ -1124,7 +1124,7 @@ def BlinkyLoop():
     t = -5
 
     BlinkyModeChange()
-
+    BlinkyMove()
 
     Tuppd = Collision_Coord_Check(blg.xcor(), blg.ycor(), lbObjID=True)
 
@@ -1140,8 +1140,7 @@ def BlinkyLoop():
         elif TypeIDl == 4:
             t -= 60
 
-        elif TypeIDl in [5, 6]:
-            BlinkyMove()
+        #elif TypeIDl in [5, 6]:
 
         if TypeIDl == 6:
             global BlinkyEaten
@@ -1172,7 +1171,7 @@ def PinkyLoop():
     t = -5
 
     PinkyModeChange()
-
+    PinkyMove()
 
     Tuppd = Collision_Coord_Check(pig.xcor(), pig.ycor(), lbObjID=True)
 
@@ -1188,8 +1187,8 @@ def PinkyLoop():
         elif TypeIDl == 4:
             t -= 60
 
-        elif TypeIDl in [5, 6]:
-            PinkyMove()
+        #elif TypeIDl in [5, 6]:
+        #    PinkyMove()
 
         if TypeIDl == 6:
             global PinkyEaten
@@ -1220,7 +1219,7 @@ def InkyLoop():
     t = -5
 
     InkyModeChange()
-
+    InkyMove()
 
     Tuppd = Collision_Coord_Check(ing.xcor(), ing.ycor(), lbObjID=True)
 
@@ -1236,8 +1235,8 @@ def InkyLoop():
         elif TypeIDl == 4:
             t -= 60
 
-        elif TypeIDl in [5, 6]:
-            InkyMove()
+        #elif TypeIDl in [5, 6]:
+        #    InkyMove()
 
         if TypeIDl == 6:
             global InkyEaten
@@ -1269,7 +1268,7 @@ def ClydeLoop():
     t = -5
 
     ClydeModeChange()
-
+    ClydeMove()
 
     Tuppd = Collision_Coord_Check(clg.xcor(), clg.ycor(), lbObjID=True)
 
@@ -1285,8 +1284,8 @@ def ClydeLoop():
         elif TypeIDl == 4:
             t -= 60
 
-        elif TypeIDl in [5, 6]:
-            ClydeMove()
+        #elif TypeIDl in [5, 6]:
+        #    ClydeMove()
 
         if TypeIDl == 6:
             global ClydeEaten
@@ -1706,11 +1705,13 @@ def GameStateOn():
                     global gamestate
                     gamestate = 0
                     GameStateOn()
+                    ID = len(Highscores)
+                    Highscores[Points, ID] = (level, JoinedName)
 
                 turtle.ontimer(change, 3000)
 
             def HandleKey(key: str):
-                nonlocal Name, EditIndex
+                nonlocal Name, EditIndex, JoinedName
                 Name[EditIndex] = key
                 EditIndex += 1
 
