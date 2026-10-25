@@ -20,6 +20,8 @@ import sys
 # 2 = Pelet
 # 3 = Power Pelet
 # 4 (Special Case) = tunnel (ghost slowdown)
+# 5 (Special Case) = intersection (Ghost asks which way to turn)
+# 6 (Special Case) = House (ghost turns off eaten and asks which way to turn)
 
 p = turtle.Turtle()
 r = turtle.Turtle()
@@ -61,19 +63,19 @@ Dots = 0
 # 0 = enter any key screen
 # 1 = Selection and highscores
 # 2 = Game
-# 3 = Game Over
-# 4 = Enter Highscore Nickname
+# 3 = Enter Highscore Nickname
 gamestate = 0
 Loop = True
 
 # Highscore: (highscore, ID) : (level, name)
 Highscores: dict[tuple[int, int],tuple[int, str]] = {
-    (0, 0) : (0, 'PLC'),
-    (0, 1) : (0, 'PLC'),
-    (0, 2) : (0, 'PLC'),
-    (0, 3) : (0, 'PLC'),
-    (0, 4) : (0, 'PLC')
+    (500, 0) : (0, 'PLC'),
+    (1100, 1) : (0, 'PLC'),
+    (500000, 2) : (255, 'PLC'),
+    (10, 3) : (0, 'PLC'),
+    (410, 4) : (0, 'PLC')
     }
+LatestID = 0
 
 print(Highscores)
 
@@ -91,26 +93,28 @@ def CreateText(ID:int, x:int, y:int):
     TurtleText[ID] = (t, x, y)
 
 def WriteText(ID:int, *, text:str, TextAllign: str="Left", colour:str='white', FontName:str="Courier", FontSize:int=64, FontType:str="Bold"):
-    t = TurtleText[ID][0]
-    x = TurtleText[ID][1]
-    y = TurtleText[ID][2]
+    if ID in TurtleText:
+        t = TurtleText[ID][0]
+        x = TurtleText[ID][1]
+        y = TurtleText[ID][2]
 
-    t.teleport(x, y)
-    t.pendown()
-    t.color(colour)
-    t.write(text, False, TextAllign, font=(FontName, FontSize, FontType))
-    t.penup()
+        t.teleport(x, y)
+        t.pendown()
+        t.color(colour)
+        t.write(text, False, TextAllign, font=(FontName, FontSize, FontType))
+        t.penup()
 
 def ClearText(ID:int):
-    t = TurtleText[ID][0]
-    x = TurtleText[ID][1]
-    y = TurtleText[ID][2]
+    if ID in TurtleText:
+        t = TurtleText[ID][0]
+        x = TurtleText[ID][1]
+        y = TurtleText[ID][2]
 
-    t.clear()
-    t.penup()
-    t.hideturtle()
-    t.speed(0)
-    t.teleport(x, y)
+        t.clear()
+        t.penup()
+        t.hideturtle()
+        t.speed(0)
+        t.teleport(x, y)
 
 # X, Y Distance Calculator
 def Distance_Calculator(x1:int|float, y1:int|float, x2:int|float, y2:int|float):
@@ -149,35 +153,41 @@ def Collision_Coord_Check(
         y:int|float,
         *,
         lbObjID:bool=False
-    ) -> tuple[int|None, int|None] | int | None:
+    ) -> list[int|tuple[int, int]]:
     x = int(round(x))
     y = int(round(y))
     TypeID = 0
+    returnable:list[int]|list[tuple[int, int]] = []
+
+    x = int(round(x))
+    y = int(round(y))
 
     if not (WorldSmallestX <= x <= WorldBiggestX):
         if lbObjID:
-            return 0, None
+            return [(0, -1)]
         else:
-            return 0
+            return [0]
     if not (WorldSmallestY <= y <=  WorldBiggestY):
         if lbObjID:
-            return 0, None
+            return [(0, -1)]
         else:
-            return 0
+            return [0]
     
     for x1, x2, y1, y2 in collision:
         if x1 <= x <= x2 and y1 <= y <= y2:
             TypeID:int = collision[x1, x2, y1, y2][0]
             if lbObjID:
                 ObjID:int = collision[x1, x2, y1, y2][1]
-                return TypeID, ObjID
+                returnable.append((TypeID, ObjID)) #type:ignore
             else:
-                return TypeID
+                returnable.append(TypeID) #type:ignore
 
-    if lbObjID:
-        return None, None
-    else:
-        return None
+    if not returnable:
+        if lbObjID:
+            returnable = [0, -1]
+        returnable = [0]
+
+    return returnable #type:ignore
 
 def Destination_Calculator(x:int|float, y:int|float, heading:float, step:int|float):
     theta = math.radians(heading)
@@ -217,8 +227,10 @@ def Collision_Check(
     for i in range(1, slices+1):
         dis = int(round(delta*i/slices))
         rx, ry = Destination_Calculator(x, y, headto, dis)
-        if Collision_Coord_Check(rx, ry) in CollisionIDs:
-            return False
+        CoordCheck = Collision_Coord_Check(rx, ry)
+        for tID in CoordCheck:
+            if tID in CollisionIDs:
+                return False
     return True
 
 # Collision Change Code
@@ -380,7 +392,7 @@ def Undelete_Collision_Object(
     collisionobj = Collision_Object_Calculator(x, y, coordinates=coordinates, size=size)
 
     collision[collisionobj] = (TypeID, ObjID)
-    ObjData.append({'Disabled':False})
+    ObjData[ObjID].update({'Disabled':False})
     return collisionobj, ObjID
 
 class UnknownError(Exception):
@@ -409,12 +421,11 @@ def puntje(x:int|float, y:int|float, lsize:int|float=8):
 
 Teleporter1ID:int|None = None
 def TeleporterCreator(x:int|float, y:int|float):
-    Tupped = Create_Collision_Object(x, y, size=(30, None), TypeID=1)
+    Tupped = Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=1)
     ObjID = Tupped[1]
     collisobj = Tupped[0]
-    GridHalfStep = int(round(GridStepSize / 2))
-    TeleportPointX = int(round((collisobj[0] + collisobj[1])/2))+GridHalfStep # X middle of the teleporter
-    TeleportPointY = int(round((collisobj[2] + collisobj[3])/2))+GridHalfStep # Y middle of the teleporter
+    TeleportPointX = int(round((collisobj[0] + collisobj[1])/2)) # X middle of the teleporter
+    TeleportPointY = int(round((collisobj[2] + collisobj[3])/2)) # Y middle of the teleporter
     ObjData[ObjID]['TeleportPointX'] = TeleportPointX
     ObjData[ObjID]['TeleportPointY'] = TeleportPointY
 
@@ -456,26 +467,26 @@ wereld = [
 
 Special = [
     '.###################.',
-    '.#........#........#.',
+    '.#i..i...i#i...i..i#.',
     '.#.##.###.#.###.##.#.',
     '.#.##.###.#.###.##.#.',
-    '.#.................#.',
+    '.#i..i.i.i.i.i.i..i#.',
     '.#.##.#.#####.#.##.#.',
-    '.#....#...#...#....#.',
+    '.#i..i#i.i#i.i#i..i#.',
     '.####.###.#.###.####.',
-    '....#.#.......#.#....',
-    '.####.#.##d##.#.####.',
-    't.......#...#.......t',
+    '....#.#i.iii.i#.#....',
+    '.####.#.##h##.#.####.',
+    '.tttti.i#hhh#i.itttt.',
     '.####.#.#####.#.####.',
-    '....#.#.......#.#....',
+    '....#.#i.....i#.#....',
     '.####.#.#####.#.####.',
-    '.#........#........#.',
+    '.#i..i.i.i#i.i.i..i#.',
     '.#.##.###.#.###.##.#.',
-    '.#..#...........#..#.',
+    '.#ii#i.i.i.i.i.i#ii#.',
     '.##.#.#.#####.#.#.##.',
-    '.#....#...#...#....#.',
+    '.#ii.i#i.i#i.i#i.ii#.',
     '.#.######.#.######.#',
-    '.#.................#.',
+    '.#i......i.i......i#.',
     '.###################.',
 ]
 
@@ -486,7 +497,7 @@ def world(colour:str='blue'):
         x = begin_x
         for teken in rij:
             if teken == '#':
-                Create_Collision_Object(x+round(GridStepSize/2), y+round(GridStepSize/2), coordinates=(x+30, y+30), TypeID=0)
+                Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=0)
                 muur(x, y)
             if teken == 't':
                 TeleporterCreator(x, y)
@@ -533,6 +544,10 @@ def SpecialLoad():
         for teken in rij:
             if teken == 't':
                 Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=4)
+            if teken == 'i':
+                Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=5)
+            if teken == 'h':
+                Create_Collision_Object(x, y, coordinates=(x+30, y+30), TypeID=6)
             x = x + 30
         y = y - 30
 
@@ -545,44 +560,61 @@ def LevelUp():
 
         r.clear()
         Dots = 0
-    for _ in range(4):
-        for c in ['yellow', 'blue']:
-            ClearMap()
+
+    def worldanimation():
+            nonlocal colours
+            c = colours.pop(0)
             world(c)
+
+    colours = ['yellow', 'blue', 'yellow', 'blue', 'yellow', 'blue', 'yellow', 'blue']
+
+    for i in range(8):
+        ClearMap()
+        turtle.ontimer(worldanimation, 500 * i)
+    
     ClearMap()
-    world()
-    DotLoad()
-    SpecialLoad()
+    WriteText(1, text='You Won!', colour='green', TextAllign='center')
+
+    def ClearText13():
+        global gamestate
+        ClearText(13)
+        gamestate = 3
+        GameStateOn()
+
+    turtle.ontimer(ClearText13, 3000)
+
+#    world()
+#    DotLoad()
+#    SpecialLoad()
 
 # AI
 def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|float, GoalY:int|float):
     def TeleporterDesti(x:int, y:int): #type:ignore
         ccc = Collision_Coord_Check(x, y, lbObjID=True)
-        if isinstance(ccc, tuple):
-            TypeID, ObjID = ccc
-        else: return None
 
-        if TypeID != 1 or ObjID == None:
-            return None
-
-        PorDat = ObjData[ObjID]
-        LinkedID = PorDat['Linked']
-
-        if LinkedID == None:
-            return None
-
-        LinkDat: dict[str, Any] = ObjData[LinkedID] #type:ignore
-
-        if PorDat['Disabled'] or LinkDat['Disabled']:
-            return None
-
-        LinkTPX = LinkDat['TeleportPointX'] #type:ignore
-        LinkTPY = LinkDat['TeleportPointY'] #type:ignore
-
-        if not On_Grid(LinkTPX, LinkTPY): #type:ignore
-            LinkTPX, LinkTPY = GridCoords(LinkTPX, LinkTPY) #type:ignore
-
-        return LinkTPX, LinkTPY #type:ignore
+        for TypeIDl, ObjIDl in ccc: #type:ignore
+            if TypeIDl != 1 or ObjIDl == None:
+                continue
+    
+            PorDat = ObjData[ObjIDl]
+            LinkedID = PorDat['Linked']
+    
+            if LinkedID == None:
+                return None
+    
+            LinkDat: dict[str, Any] = ObjData[LinkedID] #type:ignore
+    
+            if PorDat['Disabled'] or LinkDat['Disabled']:
+                return None
+    
+            LinkTPX = LinkDat['TeleportPointX'] #type:ignore
+            LinkTPY = LinkDat['TeleportPointY'] #type:ignore
+    
+            if not On_Grid(LinkTPX, LinkTPY): #type:ignore
+                LinkTPX, LinkTPY = GridCoords(LinkTPX, LinkTPY) #type:ignore
+    
+            return LinkTPX, LinkTPY #type:ignore
+        return None
     
     global GridStepSize
     if GridStepSize <= 0:
@@ -609,20 +641,24 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
     #    direcval[3]: direckeys[3]
     #}
 
-    if Start == Goal:
-        return 'Turn'
-
     if not On_Grid(StartX, StartY):
         return
 
     if not On_Grid(GoalX, GoalY):
         return
 
-    if Collision_Coord_Check(*Start) in CollisionIDs:
-        return
+    StartCoordColl = Collision_Coord_Check(*Start)
+    for coll in StartCoordColl:
+        if coll in CollisionIDs:
+            return
 
-    if Collision_Coord_Check(*Goal) in CollisionIDs:
-        return
+    GoalCoordColl = Collision_Coord_Check(*Goal)
+    for coll in GoalCoordColl:
+        if coll in CollisionIDs:
+            return
+
+    if Start == Goal:
+        return 'Turn'
     
     qeue = deque([Start])
     # Child (rotation, x, y) : Parent (rotation, x, y)
@@ -656,31 +692,34 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
                 continue
 
             # Collision check
-            if Collision_Coord_Check(nx, ny) in CollisionIDs:
-                continue
+            NextCoordColl = Collision_Coord_Check(nx, ny)
+            for coll in NextCoordColl:
+                if coll in CollisionIDs:
+                    continue
 
             # Check if the next block is a portal and then change coords to destination of portal
-            if Collision_Coord_Check(nxt[0], nxt[1]) == 1:
-                des: tuple[int, int]|None = TeleporterDesti(*nxt) #type:ignore
-                if des != None:
-                    ReverseRotation = (rotation+180)%360
-                    tdx, tdy = directions[ReverseRotation]
-                    xdes = des[0] + tdx
-                    ydes = des[1] + tdy
-                    CorrDes = (xdes, ydes)
+            for coll in NextCoordColl:
+                if coll == 1:
+                    des: tuple[int, int]|None = TeleporterDesti(*nxt) #type:ignore
+                    if des != None:
+                        ReverseRotation = (rotation+180)%360
+                        tdx, tdy = directions[ReverseRotation]
+                        xdes = des[0] + tdx
+                        ydes = des[1] + tdy
+                        CorrDes = (xdes, ydes)
 
-                    if CorrDes in parent:
-                        continue
+                        if CorrDes in parent:
+                            continue
 
-                    if Collision_Coord_Check(*CorrDes) in CollisionIDs: #type:ignore
-                        continue
+                        if Collision_Coord_Check(*CorrDes) in CollisionIDs: #type:ignore
+                            continue
 
-                    parent[CorrDes] = (ReverseRotation, *current)
-                    qeue.append(CorrDes)
-            
-            else:
-                parent[nxt[0], nxt[1]] = (rotation, *current)
-                qeue.append((nxt[0], nxt[1]))
+                        parent[CorrDes] = (ReverseRotation, *current)
+                        qeue.append(CorrDes)
+
+                else:
+                    parent[nxt[0], nxt[1]] = (rotation, *current)
+                    qeue.append((nxt[0], nxt[1]))
 
     if Goal not in parent:
         return
@@ -704,18 +743,6 @@ def bfs(StartX:int|float, StartY:int|float, StartHeading:int|float, GoalX:int|fl
 
 # Modes
 MainAIMode = 'scatter'
-def scatter():
-    global MainAIMode
-    MainAIMode = 'scatter'
-    #global TarBlinky, TarInky, TarPinky, TarClyde
-    #TarBlinky = (315, 135)
-    #TarInky = (315, -435)
-    #TarPinky = (-165, 135)
-    #TarClyde = (-165, -435)
-
-def chase():
-    global MainAIMode
-    MainAIMode = 'chase'
     #global TarBlinky, TarPinky, TarInky, TarClyde
     #px, py = (p.xcor(), p.ycor())
     #pcor = (px, py)
@@ -765,47 +792,48 @@ def FreightMode():
     FreightTimerCancel += 1
     turtle.ontimer(RemoveFreight, 7000)
 
-def ModeSwitch():
-    LevelTimingList = [0, 7000, 20000, 7000, 20000, 5000, 20000, 5000] # THIS IS DEFINED PER LEVEL THESE ARE JUST TEST VARS!!!
+LevelTimingList = [0, 7, 20, 7, 20, 5, 20, 5]
+TimerList = [
+    sum(LevelTimingList[:2]),
+    sum(LevelTimingList[:3]),
+    sum(LevelTimingList[:4]),
+    sum(LevelTimingList[:5]),
+    sum(LevelTimingList[:6]),
+    sum(LevelTimingList[:7]),
+    sum(LevelTimingList[:8])
+]
 
-    TimerList = [
-        LevelTimingList[0],
-        sum(LevelTimingList[:2]),
-        sum(LevelTimingList[:3]),
-        sum(LevelTimingList[:4]),
-        sum(LevelTimingList[:5]),
-        sum(LevelTimingList[:6]),
-        sum(LevelTimingList[:7]),
-        sum(LevelTimingList[:8])
-    ]
-
-    turtle.ontimer(scatter, TimerList[0])
-    turtle.ontimer(chase, TimerList[1])
-    turtle.ontimer(scatter, TimerList[2])
-    turtle.ontimer(chase, TimerList[3])
-    turtle.ontimer(scatter, TimerList[4])
-    turtle.ontimer(chase, TimerList[5])
-    turtle.ontimer(scatter, TimerList[6])
-    turtle.ontimer(chase, TimerList[7])
+ModeCounter = 0
+chaselist: list[int] = []
+scatterlist: list[int] = []
+for i in range(7):
+        if i % 2 == 0:
+            chaselist.append(TimerList[i])
+        else:
+            scatterlist.append(TimerList[i])
 
 # Blinky
 BlinkyMode = 'scatter'
-def BlinkyModeChange(eaten:bool=False):
-    global BlinkyMode
-    if freight:
+BlinkyEaten = False
+BlinkyOldMode: str | None = None
+def BlinkyModeChange(eaten:bool = False):
+    global BlinkyMode, BlinkyOldMode
+    if freight and BlinkyOldMode != 'freight':
         blg.right(180)
         BlinkyMode = 'freight'
-    elif eaten:
+    elif BlinkyEaten and BlinkyOldMode != 'eaten':
         blg.right(180)
         BlinkyMode = 'eaten'
     elif BlinkyMode != MainAIMode:
         blg.right(180)
         BlinkyMode = MainAIMode
+    BlinkyOldMode = BlinkyMode
 
 def BlinkyMove():
+    print('BlinkyMove Triggered')
     LevelDotAngry = 20
     if BlinkyMode == 'scatter' and Dots > LevelDotAngry:
-        TarBlinky = (315, 135)
+        TarBlinky = ScatterTarBlinky
     elif BlinkyMode == 'scatter' and Dots <= LevelDotAngry:
         TarBlinky = (p.xcor(), p.ycor())
     elif BlinkyMode == 'chase':
@@ -813,71 +841,63 @@ def BlinkyMove():
     elif BlinkyMode == 'eaten':
         TarBlinky = (60, -180)
     elif BlinkyMode == 'freight':
-        TarBlinky = (p.xcor(), p.ycor())
-        TurnBlink = random.randint(-1, 1)
-        blg.right(90*TurnBlink)
-        blg.forward(30)
+            TurnBlink = random.randint(-1, 1) * 90
+            blg.right(TurnBlink)
+            return
     else:
         raise RuntimeError(f"Unknown mode: '{BlinkyMode}' !")
 
     Heading = bfs(blg.xcor(), blg.ycor(), blg.heading(), *TarBlinky)
-    if Heading == None:
-        return
-    if Heading == 'Turn':
+    if Heading == 'Turn' or Heading == None:
         if Collision_Check(blg.xcor(), blg.ycor(), 90):
             blg.setheading(90)
-            blg.forward(30)
         elif Collision_Check(blg.xcor(), blg.ycor(), 180):
             blg.setheading(180)
-            blg.forward(30)
         elif Collision_Check(blg.xcor(), blg.ycor(), 270):
             blg.setheading(270)
-            blg.forward(30)
         elif Collision_Check(blg.xcor(), blg.ycor(), 0):
             blg.setheading(0)
-            blg.forward(30)
+        print('Blinky turned because no result of bfs was acceptable')
         return
 
     blg.setheading(Heading)
-    if Collision_Check(blg.xcor(), blg.ycor(), Heading):
-        blg.forward(30)
+    print(f'TarBlinky: {TarBlinky}', f'Heading: {Heading}', sep=', ')
     return
 
 # Pinky
 PinkyMode = 'scatter'
+PinkyEaten = False
+PinkyOldMode: str | None = None
 def PinkyModeChange(eaten:bool = False):
-    global PinkyMode
-    if PinkyMode != MainAIMode:
-        if freight:
-            pig.right(180)
-            PinkyMode = 'scatter'
-        elif eaten:
-            pig.right(180)
-            PinkyMode = 'eaten'
-        else:
-            pig.right(180)
-            PinkyMode = MainAIMode
+    global PinkyMode, PinkyOldMode
+    if freight and PinkyOldMode != 'freight':
+        pig.right(180)
+        PinkyMode = 'freight'
+    elif PinkyEaten and PinkyOldMode != 'eaten':
+        pig.right(180)
+        PinkyMode = 'eaten'
+    elif PinkyMode != MainAIMode:
+        pig.right(180)
+        PinkyMode = MainAIMode
+    PinkyOldMode = PinkyMode
 
 def PinkyMove():
     if PinkyMode == 'scatter':
-        TarPinky = (-165, 135)
+        TarPinky = ScatterTarPinky
     elif PinkyMode == 'chase':
         if int(round(p.heading())) == 90:
             Pink: tuple[int, int] = Destination_Calculator(p.xcor(), p.ycor(), 90, 120)
-            Pinki = Destination_Calculator(*Pink, 180, 120)
-            Pinky = (Pinki[0]*2, Pinki[1]*2)
+            Pinky = Destination_Calculator(*Pink, 180, 120)
         else:
-            Pinki = Destination_Calculator(p.xcor(), p.ycor(), p.heading(), 120)
-            Pinky = (Pinki[0]*2, Pinki[1]*2)
+            Pinky = Destination_Calculator(p.xcor(), p.ycor(), p.heading(), 120)
         TarPinky = Pinky
-        print('Tar Went Chase Pinky')
     elif PinkyMode == 'eaten':
         TarPinky = (60, -180)
     elif PinkyMode == 'freight':
         TarPinky = (p.xcor(), p.ycor())
-        TurnPink = random.randint(-1, 1)
-        pig.right(90*TurnPink)
-        pig.forward(30)
+        TurnPink = random.randint(-1, 1) * 90
+        pig.right(TurnPink)
+        return
     else:
         raise RuntimeError(f"Unknown mode: '{PinkyMode}' !")
 
@@ -887,54 +907,46 @@ def PinkyMove():
     if Heading == 'Turn':
         if Collision_Check(pig.xcor(), pig.ycor(), 90):
             pig.setheading(90)
-            pig.forward(30)
         elif Collision_Check(pig.xcor(), pig.ycor(), 180):
             pig.setheading(180)
-            pig.forward(30)
         elif Collision_Check(pig.xcor(), pig.ycor(), 270):
             pig.setheading(270)
-            pig.forward(30)
         elif Collision_Check(pig.xcor(), pig.ycor(), 0):
             pig.setheading(0)
-            pig.forward(30)
         return
 
     pig.setheading(Heading)
-    if Collision_Check(pig.xcor(), pig.ycor(), Heading):
-        pig.forward(30)
     return
 
-# Pinky
+# Inky
 InkyMode = 'scatter'
+InkyEaten = False
+InkyOldMode: str | None = None
 def InkyModeChange(eaten:bool = False):
-    global InkyMode
-    if freight:
+    global InkyMode, InkyOldMode
+    if freight and InkyOldMode != 'freight':
         ing.right(180)
         InkyMode = 'freight'
-    elif eaten:
+    elif InkyEaten and InkyOldMode != 'eaten':
         ing.right(180)
         InkyMode = 'eaten'
-    else:
+    elif InkyMode != MainAIMode:
         ing.right(180)
         InkyMode = MainAIMode
+    InkyOldMode = InkyMode
 
 def InkyMove():
     if InkyMode == 'scatter':
-        TarInky = (-165, 135)
+        TarInky = ScatterTarInky
     elif InkyMode == 'chase':
-        if int(round(p.heading())) == 90:
-            Pink: tuple[int, int] = Destination_Calculator(p.xcor(), p.ycor(), 90, 120)
-            Inky = Destination_Calculator(*Pink, 180, 120)
-        else:
-            Inky = Destination_Calculator(p.xcor(), p.ycor(), p.heading(), 120)
-        TarInky = Inky
+        tile2Pac = Destination_Calculator(p.xcor(), p.ycor(), p.heading(), 60)
+        TarInky = (2*tile2Pac[0] - blg.xcor(), 2*tile2Pac[1] - blg.ycor())
     elif InkyMode == 'eaten':
         TarInky = (60, -180)
     elif InkyMode == 'freight':
-        TarInky = (p.xcor(), p.ycor())
-        TurnPink = random.randint(-1, 1)
-        ing.right(90*TurnPink)
-        ing.forward(30)
+        TurnInk = random.randint(-1, 1) * 90
+        ing.right(TurnInk)
+        return
     else:
         raise RuntimeError(f"Unknown mode: '{InkyMode}' !")
 
@@ -944,21 +956,66 @@ def InkyMove():
     if Heading == 'Turn':
         if Collision_Check(ing.xcor(), ing.ycor(), 90):
             ing.setheading(90)
-            ing.forward(30)
         elif Collision_Check(ing.xcor(), ing.ycor(), 180):
             ing.setheading(180)
-            ing.forward(30)
         elif Collision_Check(ing.xcor(), ing.ycor(), 270):
             ing.setheading(270)
-            ing.forward(30)
         elif Collision_Check(ing.xcor(), ing.ycor(), 0):
             ing.setheading(0)
-            ing.forward(30)
         return
 
     ing.setheading(Heading)
-    if Collision_Check(ing.xcor(), ing.ycor(), Heading):
-        ing.forward(30)
+    return
+
+# Clyde
+ClydeMode = 'scatter'
+ClydeEaten = False
+ClydeOldMode: str | None = None
+def ClydeModeChange(eaten:bool = False):
+    global ClydeMode, ClydeOldMode
+    if freight and ClydeOldMode != 'freight':
+        clg.right(180)
+        ClydeMode = 'freight'
+    elif ClydeEaten and ClydeOldMode != 'eaten':
+        clg.right(180)
+        ClydeMode = 'eaten'
+    elif ClydeMode != MainAIMode:
+        clg.right(180)
+        ClydeMode = MainAIMode
+    ClydeOldMode = ClydeMode
+
+def ClydeMove():
+    if ClydeMode == 'scatter':
+        TarClyde = ScatterTarClyde
+    elif ClydeMode == 'chase':
+        if clg.distance(p.xcor(), p.ycor()) <= 240:
+            TarClyde = ScatterTarClyde
+        else:
+            TarClyde = (p.xcor(), p.ycor())
+    elif ClydeMode == 'eaten':
+        TarClyde = (60, -180)
+    elif ClydeMode == 'freight':
+            TurnClyde = random.randint(-1, 1) * 90
+            clg.right(TurnClyde)
+            return
+    else:
+        raise RuntimeError(f"Unknown mode: '{ClydeMode}' !")
+
+    Heading = bfs(clg.xcor(), clg.ycor(), clg.heading(), *TarClyde)
+    if Heading == None:
+        return
+    if Heading == 'Turn':
+        if Collision_Check(clg.xcor(), clg.ycor(), 90):
+            clg.setheading(90)
+        elif Collision_Check(clg.xcor(), clg.ycor(), 180):
+            clg.setheading(180)
+        elif Collision_Check(clg.xcor(), clg.ycor(), 270):
+            clg.setheading(270)
+        elif Collision_Check(clg.xcor(), clg.ycor(), 0):
+            clg.setheading(0)
+        return
+
+    clg.setheading(Heading)
     return
 
 def rechts():
@@ -1013,9 +1070,10 @@ def GameOver():
 
     r.clear()
     
-    global gamestate, Loop
+    global gamestate, Loop, ModeCounter
     Loop = False
-    gamestate = 0
+    gamestate = 3
+    ModeCounter = 0
     GameStateOn()
 
 # Tick Loops
@@ -1029,55 +1087,19 @@ def InitLoops():
 
     BlinkyLoop()
     PinkyLoop()
+    InkyLoop()
+    ClydeLoop()
 
 def TickLoop():
-    print('Main AI Loop: ' + MainAIMode + ', Blinky: ' + BlinkyMode + ', Pinky: ' + PinkyMode + ' freight: ' + str(freight))
+    global level, Dots, LevelTimeElapsed, EatenStreakFreight, Points, ModeCounter, MainAIMode
 
-    p_cor = (p.xcor(), p.ycor())
-    blg_cor = (blg.xcor(), blg.ycor())
-    pig_cor = (pig.xcor(), pig.ycor())
-    ing_cor = (ing.xcor(), ing.ycor())
-    clg_cor = (clg.xcor(), clg.ycor())
-
-    global level, Dots, LevelTimeElapsed, EatenStreakFreight, Points
-
-    blg_to_p_dis = blg.distance(*p_cor)
-    if blg_to_p_dis <= 25:
-        if BlinkyMode == 'freight':
-            Points += 200 * (2 ** EatenStreakFreight)
-            EatenStreakFreight += 1
-            BlinkyModeChange(True)
-        if not BlinkyMode in ['freight', 'eaten']:
-            GameOver()
-
-    pig_to_p_dis = pig.distance(*p_cor)
-    if pig_to_p_dis <= 25:
-        if PinkyMode == 'freight':
-            Points += 200 * (2 ** EatenStreakFreight)
-            EatenStreakFreight += 1
-            PinkyModeChange(True)
-        if not PinkyMode in ['freight', 'eaten']:
-            GameOver()
-
-    ing_to_p_dis = ing.distance(*p_cor)
-    if ing_to_p_dis <= 25:
-        if InkyMode == 'freight':
-            Points += 200 * (2 ** EatenStreakFreight)
-            EatenStreakFreight += 1
-            InkyModeChange(True)
-        if not InkyMode in ['freight', 'eaten']:
-            GameOver()
-
-    ClydeMode = 'scatter' #temp
-    clg_to_p_dis = ing.distance(*p_cor)
-    if clg_to_p_dis <= 25:
-        if ClydeMode == 'freight':
-            Points += 200 * (2 ** EatenStreakFreight)
-            EatenStreakFreight += 1
-            ClydeModeChange(True)
-        if not ClydeMode in ['freight', 'eaten']:
-            GameOver()
-            
+    ModeCounter += 1
+    ChaseNumber = int(math.floor(ModeCounter/2))
+    if ChaseNumber in chaselist:
+        MainAIMode = 'chase'
+    elif ChaseNumber in scatterlist:
+        MainAIMode = 'scatter'
+    
     if Dots == 0:
         level += 1
         LevelUp()
@@ -1097,109 +1119,257 @@ def BlinkyLoop():
     t = -5
 
     BlinkyModeChange()
-    BlinkyMove()
+
 
     Tuppd = Collision_Coord_Check(blg.xcor(), blg.ycor(), lbObjID=True)
-    if isinstance(Tuppd, tuple):
-        Tupped:tuple[int|None, int|None] = Tuppd
-        TypeID = Tupped[0]
-        ObjID = Tupped[1]
-    else:
-        TypeID = -100
-        ObjID = -10000
-        raise RuntimeError("How?")
 
-    if ObjID != None and TypeID != None:
-        if TypeID == 0:
+    for TypeIDl, ObjIDl in Tuppd: #type:ignore
+        if TypeIDl == 0:
             blg.teleport(begin_x+75, begin_y-15)
             print('Out of Bounds')
 
-        if TypeID == 1:
-            teleportertp(ObjID, blg)
+        elif TypeIDl == 1:
+            if ObjIDl != None:
+                teleportertp(ObjIDl, blg) #type:ignore
 
-        if TypeID == 4:
+        elif TypeIDl == 4:
             t -= 60
 
-    t -= max(20 - 5 * level, 0)
+        elif TypeIDl in [5, 6]:
+            BlinkyMove()
 
-    print('Blinky: ' + str(time := int(round(142 / (1+(t*0.01))))))
+        if TypeIDl == 6:
+            global BlinkyEaten
+            BlinkyEaten = False
 
-    if Loop:
-        turtle.ontimer(BlinkyLoop, time)
-    else:
-        return
+    BlinkySoonToBe = Destination_Calculator(blg.xcor(), blg.ycor(), blg.heading(), 30)
+    Tuppld = Collision_Coord_Check(*BlinkySoonToBe)
+    FutureTypeID = Tuppld
+
+    for FTypeID in FutureTypeID:
+        if isinstance(FTypeID, int):
+            if FTypeID == 1:
+                blg.forward(30)
+
+            elif FTypeID not in CollisionIDs:
+                blg.forward(30)
+
+            t -= max(20 - 5 * level, 0)
+
+            time = int(round(142 / (1+(t*0.01))))
+
+            if Loop:
+                turtle.ontimer(BlinkyLoop, time)
+            else:
+                return
 
 def PinkyLoop():
     t = -5
 
     PinkyModeChange()
-    PinkyMove()
+
 
     Tuppd = Collision_Coord_Check(pig.xcor(), pig.ycor(), lbObjID=True)
-    if isinstance(Tuppd, tuple):
-        Tupped:tuple[int|None, int|None] = Tuppd
-        TypeID = Tupped[0]
-        ObjID = Tupped[1]
-    else:
-        TypeID = -100
-        ObjID = -10000
-        raise RuntimeError("How?")
 
-    if ObjID != None and TypeID != None:
-        if TypeID == 0:
+    for TypeIDl, ObjIDl in Tuppd: #type:ignore
+        if TypeIDl == 0:
             pig.teleport(begin_x+75, begin_y-15)
             print('Out of Bounds')
 
-        if TypeID == 1:
-            teleportertp(ObjID, pig)
+        elif TypeIDl == 1:
+            if ObjIDl != None:
+                teleportertp(ObjIDl, blg) #type:ignore
 
-        if TypeID == 4:
+        elif TypeIDl == 4:
             t -= 60
 
-    t -= max(20 - 5 * level, 0)
+        elif TypeIDl in [5, 6]:
+            PinkyMove()
 
-    print('Pinky: ' + str(time := int(round(142 / (1+(t*0.01))))))
+        if TypeIDl == 6:
+            global PinkyEaten
+            PinkyEaten = False
 
-    if Loop:
-        turtle.ontimer(PinkyLoop, time)
-    else:
-        return
+    PinkySoonToBe = Destination_Calculator(pig.xcor(), pig.ycor(), pig.heading(), 30)
+    Tuppld = Collision_Coord_Check(*PinkySoonToBe)
+    FutureTypeID = Tuppld
+
+    for FTypeID in FutureTypeID:
+        if isinstance(FTypeID, int):
+            if FTypeID == 1:
+                pig.forward(30)
+    
+            elif FTypeID not in CollisionIDs:
+                pig.forward(30)
+    
+            t -= max(20 - 5 * level, 0)
+    
+            time = int(round(142 / (1+(t*0.01))))
+    
+            if Loop:
+                turtle.ontimer(PinkyLoop, time)
+            else:
+                return
+
+def InkyLoop():
+    t = -5
+
+    InkyModeChange()
+
+
+    Tuppd = Collision_Coord_Check(ing.xcor(), ing.ycor(), lbObjID=True)
+
+    for TypeIDl, ObjIDl in Tuppd: #type:ignore
+        if TypeIDl == 0:
+            ing.teleport(begin_x+75, begin_y-15)
+            print('Out of Bounds')
+
+        elif TypeIDl == 1:
+            if ObjIDl != None:
+                teleportertp(ObjIDl, blg) #type:ignore
+
+        elif TypeIDl == 4:
+            t -= 60
+
+        elif TypeIDl in [5, 6]:
+            InkyMove()
+
+        if TypeIDl == 6:
+            global InkyEaten
+            InkyEaten = False
+
+    InkySoonToBe = Destination_Calculator(ing.xcor(), ing.ycor(), ing.heading(), 30)
+    Tuppld = Collision_Coord_Check(*InkySoonToBe)
+    FutureTypeID = Tuppld
+
+
+    for FTypeID in FutureTypeID:
+        if isinstance(FTypeID, int):
+            if FTypeID == 1:
+                ing.forward(30)
+    
+            elif FTypeID not in CollisionIDs:
+                ing.forward(30)
+    
+            t -= max(20 - 5 * level, 0)
+    
+            time = int(round(142 / (1+(t*0.01))))
+    
+            if Loop:
+                turtle.ontimer(InkyLoop, time)
+            else:
+                return
+
+def ClydeLoop():
+    t = -5
+
+    ClydeModeChange()
+
+
+    Tuppd = Collision_Coord_Check(clg.xcor(), p.ycor(), lbObjID=True)
+
+    for TypeIDl, ObjIDl in Tuppd: #type:ignore
+        if TypeIDl == 0:
+            clg.teleport(begin_x+75, begin_y-15)
+            print('Out of Bounds')
+
+        elif TypeIDl == 1:
+            if ObjIDl != None:
+                teleportertp(ObjIDl, blg) #type:ignore
+
+        elif TypeIDl == 4:
+            t -= 60
+
+        elif TypeIDl in [5, 6]:
+            ClydeMove()
+
+        if TypeIDl == 6:
+            global ClydeEaten
+            ClydeEaten = False
+
+    ClydeSoonToBe = Destination_Calculator(clg.xcor(), clg.ycor(), clg.heading(), 30)
+    Tuppld = Collision_Coord_Check(*ClydeSoonToBe)
+    FutureTypeID = Tuppld
+
+    for FTypeID in FutureTypeID:
+        if isinstance(FTypeID, int):
+            if FTypeID == 1:
+                clg.forward(30)
+    
+            elif FTypeID not in CollisionIDs:
+                clg.forward(30)
+    
+            t -= max(20 - 5 * level, 0)
+    
+            time = int(round(142 / (1+(t*0.01))))
+    
+            if Loop:
+                turtle.ontimer(ClydeLoop, time)
+            else:
+                return
 
 LevelDotSlowdown = 11.25
 LevelFreightSpeedUp = 12.5
 def WalkLoop():
+    global Dots, Points, EatenStreakFreight, BlinkyEaten, PinkyEaten, InkyEaten, ClydeEaten
     t = 0
 
-    global Dots, Points
+    p_cor = (p.xcor(), p.ycor())
+
+    blg_to_p_dis = blg.distance(*p_cor)
+    if blg_to_p_dis <= 25:
+        if BlinkyMode == 'freight':
+            Points += 200 * (2 ** EatenStreakFreight)
+            EatenStreakFreight += 1
+            BlinkyEaten = True
+        if not BlinkyMode in ['freight', 'eaten']:
+            GameOver()
+
+    pig_to_p_dis = pig.distance(*p_cor)
+    if pig_to_p_dis <= 25:
+        if PinkyMode == 'freight':
+            Points += 200 * (2 ** EatenStreakFreight)
+            EatenStreakFreight += 1
+            PinkyEaten = True
+            PinkyModeChange(True)
+        if not PinkyMode in ['freight', 'eaten']:
+            GameOver()
+
+    ing_to_p_dis = ing.distance(*p_cor)
+    if ing_to_p_dis <= 25:
+        if InkyMode == 'freight':
+            Points += 200 * (2 ** EatenStreakFreight)
+            EatenStreakFreight += 1
+            InkyEaten = True
+            InkyModeChange(True)
+        if not InkyMode in ['freight', 'eaten']:
+            GameOver()
+
+    clg_to_p_dis = clg.distance(*p_cor)
+    if clg_to_p_dis <= 25:
+        if ClydeMode == 'freight':
+            Points += 200 * (2 ** EatenStreakFreight)
+            EatenStreakFreight += 1
+            ClydeEaten = True
+            ClydeModeChange(True)
+        if not ClydeMode in ['freight', 'eaten']:
+            GameOver()
+
     if Collision_Check(p.xcor(), p.ycor(), p.heading()):
         p.forward(30)
 
     Tuppd = Collision_Coord_Check(p.xcor(), p.ycor(), lbObjID=True)
-    if isinstance(Tuppd, tuple):
-        Tupped:tuple[int|None, int|None] = Tuppd
-        TypeID = Tupped[0]
-        ObjID = Tupped[1]
-    else:
-        TypeID = -100
-        ObjID = -10000
-        raise RuntimeError("How?")
 
-    #if ObjID == None or TypeID == None:
-    #    p.teleport(begin_x+75, begin_y-15)
-    #    ObjID=0
-    #    TypeID=-2
-    #    print('Out of Bounds\nXcor: ' + str(p.xcor()) + ', Ycor: ' + str(p.ycor()))
-
-    if ObjID != None and TypeID != None:
-        if TypeID == 0:
+    for TypeIDl, ObjIDl in Tuppd: #type:ignore
+        if TypeIDl == 0:
             p.teleport(begin_x+75, begin_y-15)
             print('Out of Bounds')
 
-        if TypeID == 1:
-            teleportertp(ObjID, p)
+        if TypeIDl == 1:
+            if ObjIDl != None:
+                teleportertp(ObjIDl, p) #type:ignore
 
-        if TypeID == 2:
-            print('trig 2')
+        if TypeIDl == 2:
             Remove_Collision_Object(
                 p.xcor()-round(GridStepSize/2),
                 p.ycor()-round(GridStepSize/2),
@@ -1218,27 +1388,33 @@ def WalkLoop():
             r.pendown()
             t -= LevelDotSlowdown
 
-        if TypeID == 3:
-            print('trig 3')
-            Remove_Collision_Object(
+        if TypeIDl == 3:
+            rem = Remove_Collision_Object(
                 p.xcor()-round(GridStepSize/2),
                 p.ycor()-round(GridStepSize/2),
                 coordinates=(
-                    p.xcor()-round(GridStepSize/2)+30,
-                    p.ycor()-round(GridStepSize/2)+30
+                    p.xcor()+round(GridStepSize/2),
+                    p.ycor()+round(GridStepSize/2)
                 ),
                 TypeID=3
             )
-            Dots -= 1
-            Points += 50
-            r.teleport(p.xcor()-14, p.ycor()-14)
-            r.setheading(0)
-            r.penup()
-            blok(28, 'black')
-            r.pendown()
-            t -= LevelDotSlowdown
-            FreightMode()
-        print(Dots)
+
+            if rem[1]:
+                Dots -= 1
+                Points += 50
+                r.teleport(p.xcor()-14, p.ycor()-14)
+                r.setheading(0)
+                r.penup()
+                blok(28, 'black')
+                r.pendown()
+                t -= LevelDotSlowdown
+                FreightMode()
+
+    #if ObjID == None or TypeID == None:
+    #    p.teleport(begin_x+75, begin_y-15)
+    #    ObjID=0
+    #    TypeID=-2
+    #    print('Out of Bounds\nXcor: ' + str(p.xcor()) + ', Ycor: ' + str(p.ycor()))
 
     if freight:
         t += LevelFreightSpeedUp
@@ -1248,7 +1424,10 @@ def WalkLoop():
 
     t -= max(20 - 5 * level, 0)
 
-    print('Paccy: ' + str(time := int(round(142 / (1+(t*0.01))))))
+    time = int(round(142 / (1+(t*0.01))))
+
+    WriteText(11, text=f'Highscore: {Points}', FontSize=128)
+    WriteText(12, text=f'Level: {level+1}', FontSize=128)
 
     if Loop:
         turtle.ontimer(WalkLoop, time)
@@ -1263,19 +1442,23 @@ CreateText(1, GridOriginX, 30) # You Died text
 CreateText(2, -60, 150) # Play Game
 CreateText(3, -60, 120) # Options (This cannot be implemented since it uses a json to store values, but it is intended for when I have time)
 CreateText(4, -60, 90) # Exit Game
+for i in range(6): # creates 5 highscore texts and a header with highscore as text
+    CreateText(i+5, -60, 30-30*i)
+CreateText(11, 450, 180)
+CreateText(12, GridOriginX, 0) # Highscore input and other highscore text thing stuff (totally written while tired! Nothing else (pinky promise NOT!))
 
 # AIs/Enemies
-TarBlinky = (315, 135)
-TarInky = (315, -435)
-TarPinky = (-165, 135)
-TarClyde = (-165, -435)
+ScatterTarBlinky = (315, 135)
+ScatterTarInky = (315, -435)
+ScatterTarPinky = (-165, 135)
+ScatterTarClyde = (-165, -435)
 
 blg = turtle.Turtle()
 blg.speed(0)
 blg.color('red')
 blg.penup()
 blg.teleport(75, -135)
-blg.setheading(270)
+blg.setheading(90)
 blg.ht()
 
 pig = turtle.Turtle()
@@ -1283,7 +1466,7 @@ pig.speed(0)
 pig.color('deeppink')
 pig.penup()
 pig.teleport(75, -135)
-pig.setheading(270)
+pig.setheading(90)
 pig.ht()
 
 ing = turtle.Turtle()
@@ -1291,7 +1474,7 @@ ing.speed(0)
 ing.color('cyan')
 ing.penup()
 ing.teleport(75, -135)
-ing.setheading(270)
+ing.setheading(90)
 ing.ht()
 
 clg = turtle.Turtle()
@@ -1299,7 +1482,7 @@ clg.speed(0)
 clg.color('sandybrown')
 clg.penup()
 clg.teleport(75, -135)
-clg.setheading(270)
+clg.setheading(90)
 clg.ht()
 
 def ClearGhosts():
@@ -1341,6 +1524,8 @@ def GameStateOn():
     global gamestate
     match gamestate:
         case 0: # Press any key (not so any)
+            for i in range(15):
+                ClearText(i)
             ClearGhosts()
             p.ht()
 
@@ -1350,8 +1535,8 @@ def GameStateOn():
                 global gamestate
                 turtle.onkey(None, 'space') #type:ignore
 
-                ClearText(0)
-                ClearText(1)
+                for i in range(15):
+                    ClearText(i)
 
                 gamestate += 1
                 GameStateOn()
@@ -1364,10 +1549,13 @@ def GameStateOn():
             turtle.listen()
         case 1:
             try:
+                for i in range(15):
+                    ClearText(i)
                 ClearGhosts()
                 WriteText(2, text='Play Game', TextAllign='left')
                 WriteText(3, text='Options (WIP, not designed for website!)', TextAllign='left')
                 WriteText(4, text='Exit', TextAllign='left')
+                WriteText(5, text='Highscores', TextAllign='left')
                 
                 p.st()
                 p.shape('classic')
@@ -1375,23 +1563,24 @@ def GameStateOn():
                 p.setheading(0)
 
                 sel = 0
-                print(Highscores)
-                print(HighscoreKeys := Highscores.keys())
+                HighscoreKeys = Highscores.keys()
 
-                print(HighscoreKeys)
-                HighscoreKeys = sorted(HighscoreKeys, key=itemgetter(0))
+                HighscoreKeys = sorted(HighscoreKeys, key=itemgetter(0), reverse=True)
 
-                HighscoreStr: dict[tuple[int, int],tuple[int, str, str]] = {}
-                for hs, id in HighscoreKeys:
+                # ID : (Highscore, Level, Name, Highscore in Str)
+                HighscoreStr: dict[int,tuple[int, int, str, str]] = {}
+                for iteration, (hs, id) in enumerate(HighscoreKeys):
                     ZeroNumber = str(hs).zfill(8)
                     DataTransfer = Highscores[(hs, id)]
-                    HighscoreStr[(hs, id)] = (*DataTransfer, ZeroNumber)
+                    HighscoreStr[id] = (hs, *DataTransfer, ZeroNumber)
+                    if iteration < 6:
+                        WriteText(iteration+6, text=f'Rank: {iteration+1}\tHighscore: {ZeroNumber}\tLevel: {DataTransfer[0]}\tName: {DataTransfer[1]}')
 
                 # Complete this code
                 def ActionEvent():
                     nonlocal sel
                     if sel < 0:
-                        sel = 5
+                        sel = 2
                     match sel:
                         case 0:
                             global gamestate
@@ -1399,6 +1588,8 @@ def GameStateOn():
                             turtle.onkey(None, 'Enter') #type:ignore
                             turtle.onkey(None, 'Up') #type:ignore
                             turtle.onkey(None, 'Down') #type:ignore
+                            for i in range(15):
+                                ClearText(i)
                             gamestate = 2
                             GameStateOn()
                         case 1: # Options
@@ -1446,36 +1637,70 @@ def GameStateOn():
             except Exception as e:
                 print(f'Gamestate 1 Crashed and returned to state 0\nException: {e}')
                 gamestate = 0
+                GameStateOn()
         case 2:
+            global collision
+            collision = {}
+            for i in range(15):
+                ClearText(i)
             #try:
-                # World Map Loader
-                world()
-                DotLoad()
+            # World Map Loader
+            world()
+            DotLoad()
+            SpecialLoad()
 
-                # Player Character
-                p.penup()
-                p.teleport(45, -315)
-                p.shape('circle')
-                p.color('gold')
+            # Player Character
+            p.penup()
+            p.teleport(45, -315)
+            p.shape('circle')
+            p.color('gold')
 
-                ModeSwitch()
-                ShowGhosts()
+            ShowGhosts()
 
-                InitLoops()
+            InitLoops()
 
-                turtle.onkey(rechts, 'Right')
-                turtle.onkey(links, 'Left')
-                turtle.onkey(omhoog, 'Up')
-                turtle.onkey(omlaag, 'Down')
-                turtle.onkey(DebugPost, 'd')
-                turtle.listen()
+            turtle.onkey(rechts, 'Right')
+            turtle.onkey(links, 'Left')
+            turtle.onkey(omhoog, 'Up')
+            turtle.onkey(omlaag, 'Down')
+            turtle.onkey(DebugPost, 'd')
+            turtle.listen()
             #except Exception as e:
             #    print(f'Gamestate 2 Crashed and returned to state 0\nException: {e}')
             #    gamestate = 0
         case 3:
-            # highscore add
+            for i in range(15):
+                ClearText(i)
+            WriteText(12, text=f'Highscore: {Points}, Level: {level+1}, Name: ...')
+            Name = ['.', '.', '.']
+            EditIndex = 0
+
+            def NextGameState():
+                for key in 'qwertyuiopasdfghjklzxcvbnm':
+                    turtle.onkey(None, key) #type:ignore
+
+                def change():
+                    global gamestate
+                    gamestate = 0
+                    GameStateOn()
+
+                turtle.ontimer(change, 3000)
+
+            def HandleKey(key: str):
+                nonlocal Name, EditIndex
+                Name[EditIndex] = key
+                EditIndex += 1
+                if EditIndex == 3:
+                    NextGameState()
+
+            for key in 'qwertyuiopasdfghjklzxcvbnm':
+                turtle.onkey(lambda k=key: HandleKey(k), key)
+
+            turtle.listen()
+            
         case _:
             gamestate = 0
+            GameStateOn()
 
 GameStateOn()
 
@@ -1501,3 +1726,15 @@ turtle.mainloop()
 # 2nd ghost in 1 freight = 400
 # 3rd ghost in 1 freight = 800
 # 4th ghost in 1 freight = 1600
+
+# ToDO:
+# Highscores
+# if destination == teleporter do forward
+# Add ghost intersections
+
+# ToDo Fuller Version:
+# Add sound
+# Add intersection qeueus
+#
+# If time surplus:
+# Change everything into classes
